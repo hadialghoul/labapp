@@ -1,0 +1,10 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+<div class="submit-row">
+    <input type="submit" value="Save" class="default" name="_save">
+    <input type="submit" value="Save and add another" class="default" name="_addanother">
+    <input type="submit" value="Save and add another step for this patient" class="default" name="_addanother_patient" style="background: #417690; margin-left: 10px;">
+    <input type="submit" value="Save and continue editing" class="default" name="_continue">
+</div>
+{% endblock %}
