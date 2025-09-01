@@ -33,6 +33,8 @@ ALLOWED_HOSTS = [
     '0.0.0.0',
     '.railway.app',
     '.up.railway.app',
+    'labapp-bnpd.onrender.com',  # Your Render domain
+    '.onrender.com',
 ]
 
 
