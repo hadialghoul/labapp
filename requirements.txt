@@ -1,0 +1,14 @@
+Django==5.2
+djangorestframework==3.16.0
+djangorestframework-simplejwt==5.5.0
+django-cors-headers==4.7.0
+djoser==2.3.1
+reportlab==4.2.5
+Pillow==10.4.0
+python-social-auth==0.3.6
+social-auth-app-django==5.4.3
+psycopg2-binary==2.9.9
+gunicorn==21.2.0
+whitenoise==6.8.2
+python-dotenv==1.0.1
+dj-database-url==2.1.0
