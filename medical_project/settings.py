@@ -24,7 +24,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:pdQGsuXfYryFyBFv
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-&rmq_l^-jfvodtek((f$(n3p_)&*1x47(q90wsq54%1y%bk^+g')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+DEBUG = False
 
 ALLOWED_HOSTS = [
     '192.168.0.112', 
