@@ -24,7 +24,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:hxFjJYmSCfIgpNVx
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-&rmq_l^-jfvodtek((f$(n3p_)&*1x47(q90wsq54%1y%bk^+g')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True  # Set to True for local development
 
 ALLOWED_HOSTS = [
     '192.168.0.112', 
@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'accounts',
     'django.contrib.sites',
+    'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -228,3 +229,13 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'caldentalab@gmail.com'  # <--- your Gmail address
 EMAIL_HOST_PASSWORD = 'zpdewctrmdaxrqps' 
 DEFAULT_FROM_EMAIL = 'caldentalab@gmail.com'
+
+# Cron jobs configuration
+CRONJOBS = [
+    # Check for finished treatment steps every hour and send notifications with auto-progress
+    ('0 * * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
+    # Alternative: Check every 6 hours instead
+    # ('0 */6 * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
+    # Alternative: Check once daily at 9 AM
+    # ('0 9 * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
+]
