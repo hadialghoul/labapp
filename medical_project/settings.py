@@ -54,8 +54,11 @@ INSTALLED_APPS = [
     'corsheaders',
     'accounts',
     'django.contrib.sites',
-    'django_crontab',
 ]
+
+# Add django_crontab only in development
+if DEBUG:
+    INSTALLED_APPS.append('django_crontab')
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -230,12 +233,9 @@ EMAIL_HOST_USER = 'caldentalab@gmail.com'  # <--- your Gmail address
 EMAIL_HOST_PASSWORD = 'zpdewctrmdaxrqps' 
 DEFAULT_FROM_EMAIL = 'caldentalab@gmail.com'
 
-# Cron jobs configuration
-CRONJOBS = [
-    # Check for finished treatment steps every hour and send notifications with auto-progress
-    ('0 * * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
-    # Alternative: Check every 6 hours instead
-    # ('0 */6 * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
-    # Alternative: Check once daily at 9 AM
-    # ('0 9 * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
-]
+# Cron jobs configuration (development only)
+if DEBUG:
+    CRONJOBS = [
+        # Check for finished treatment steps every hour and send notifications with auto-progress
+        ('0 * * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
+    ]
