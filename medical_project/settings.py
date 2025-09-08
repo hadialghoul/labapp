@@ -162,9 +162,14 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
-# Supabase configuration for production
-if not DEBUG:
-    # Supabase settings
+# Use local storage in development, Supabase in production
+if DEBUG:
+    # Use local storage in development
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    # Ensure media directory exists
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
+else:
+    # Supabase settings for production
     SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://xvcjbtbcoybxuqhjwjgp.supabase.co')
     SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2Y2pidGJjb3lieHVxaGp3amdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMzY1MTksImV4cCI6MjA3MjkxMjUxOX0.KKNbvdY16SLOXmfpBmqVoGX2hohPO36wQpm3AAHia8k')
     SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'medical-lab-project')
@@ -174,11 +179,6 @@ if not DEBUG:
     
     # Update media URL to use Supabase
     MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET_NAME}/'
-else:
-    # Use local storage in development
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    # Ensure media directory exists
-    os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
