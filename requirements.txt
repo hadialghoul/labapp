@@ -13,3 +13,5 @@ whitenoise==6.8.2
 python-dotenv==1.0.1
 dj-database-url==2.1.0
 django-crontab==0.7.1
+cloudinary==1.41.0
+django-cloudinary-storage==0.3.0
