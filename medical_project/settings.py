@@ -11,9 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 import dj_database_url
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -50,8 +47,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
@@ -166,24 +161,24 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Cloudinary configuration for production
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
-
-# Use Cloudinary in production, local storage in development
+# Media files configuration
+# Supabase configuration for production
 if not DEBUG:
-    cloudinary.config(
-        cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
-        api_key=CLOUDINARY_STORAGE['API_KEY'],
-        api_secret=CLOUDINARY_STORAGE['API_SECRET'],
-        secure=True
-    )
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    # Supabase settings
+    SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://xvcjbtbcoybxuqhjwjgp.supabase.co')
+    SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2Y2pidGJjb3lieHVxaGp3amdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMzY1MTksImV4cCI6MjA3MjkxMjUxOX0.KKNbvdY16SLOXmfpBmqVoGX2hohPO36wQpm3AAHia8k')
+    SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'medical-app-media')
+    
+    # Use Supabase for media files in production
+    DEFAULT_FILE_STORAGE = 'medical_project.storage_backends.SupabaseStorage'
+    
+    # Update media URL to use Supabase
+    MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET_NAME}/'
 else:
+    # Use local storage in development
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    # Ensure media directory exists
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
