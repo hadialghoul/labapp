@@ -167,7 +167,7 @@ if not DEBUG:
     # Supabase settings
     SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://xvcjbtbcoybxuqhjwjgp.supabase.co')
     SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2Y2pidGJjb3lieHVxaGp3amdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMzY1MTksImV4cCI6MjA3MjkxMjUxOX0.KKNbvdY16SLOXmfpBmqVoGX2hohPO36wQpm3AAHia8k')
-    SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'medical-app-media')
+    SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'medical-lab-project')
     
     # Use Supabase for media files in production
     DEFAULT_FILE_STORAGE = 'medical_project.storage_backends.SupabaseStorage'
