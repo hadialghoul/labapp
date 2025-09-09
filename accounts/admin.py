@@ -124,6 +124,11 @@ class TreatmentStepPhotoInline(admin.TabularInline):
     model = TreatmentStepPhoto
     extra = 1
     readonly_fields = ('uploaded_at', 'uploaded_by')
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.uploaded_by:
+            obj.uploaded_by = request.user
+        super().save_model(request, obj, form, change)
 
 class TreatmentStepInline(admin.TabularInline):
     model = TreatmentStep
@@ -247,8 +252,21 @@ class TreatmentStepAdmin(admin.ModelAdmin):
 
 @admin.register(TreatmentStepPhoto)
 class TreatmentStepPhotoAdmin(admin.ModelAdmin):
-    list_display = ('step', 'uploaded_by', 'uploaded_at')
+    list_display = ('step', 'get_step_patient', 'uploaded_by', 'uploaded_at')
+    list_filter = ('step__treatment__patient__user__email', 'uploaded_at', 'uploaded_by')
     readonly_fields = ('uploaded_at',)
+    
+    def get_step_patient(self, obj):
+        """Show which patient this photo belongs to"""
+        return f"{obj.step.treatment.patient.user.email}"
+    get_step_patient.short_description = 'Patient'
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.uploaded_by:
+            obj.uploaded_by = request.user
+        print(f"🔄 Saving photo for step: {obj.step.name} (ID: {obj.step.id})")
+        print(f"📧 Patient: {obj.step.treatment.patient.user.email}")
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(PatientReport)
