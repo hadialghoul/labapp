@@ -168,18 +168,24 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
-# Temporarily use local storage for both development and production to test
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Try Supabase storage with improved error handling
+if not DEBUG:
+    try:
+        SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://xvcjbtbcoybxuqhjwjgp.supabase.co')
+        SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2Y2pidGJjb3lieHVxaGp3amdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMzY1MTksImV4cCI6MjA3MjkxMjUxOX0.KKNbvdY16SLOXmfpBmqVoGX2hohPO36wQpm3AAHia8k')
+        SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'medical-lab-project')
+        DEFAULT_FILE_STORAGE = 'medical_project.storage_backends.SupabaseStorage'
+        MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET_NAME}/'
+        print(f"🔄 Using Supabase storage: {SUPABASE_URL}")
+    except Exception as e:
+        print(f"❌ Supabase setup failed, falling back to local storage: {e}")
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+else:
+    # Local storage for development
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 # Ensure media directory exists
 os.makedirs(MEDIA_ROOT, exist_ok=True)
-
-# Supabase settings for future use (commented out for now)
-# if not DEBUG:
-#     SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://xvcjbtbcoybxuqhjwjgp.supabase.co')
-#     SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2Y2pidGJjb3lieHVxaGp3amdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMzY1MTksImV4cCI6MjA3MjkxMjUxOX0.KKNbvdY16SLOXmfpBmqVoGX2hohPO36wQpm3AAHia8k')
-#     SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'medical-lab-project')
-#     DEFAULT_FILE_STORAGE = 'medical_project.storage_backends.SupabaseStorage'
-#     MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET_NAME}/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

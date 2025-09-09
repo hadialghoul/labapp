@@ -41,6 +41,17 @@ class SupabaseStorage(Storage):
                 )
                 
                 print(f"✅ Supabase upload response: {response}")
+                
+                # Check if upload was successful
+                if hasattr(response, 'status_code') and response.status_code != 200:
+                    raise Exception(f"Upload failed with status: {response.status_code}")
+                elif hasattr(response, 'error') and response.error:
+                    raise Exception(f"Upload error: {response.error}")
+                
+                # Verify file was actually uploaded by checking if it exists
+                if not self.exists(unique_name):
+                    raise Exception("File upload verification failed - file not found after upload")
+                
                 return unique_name
                 
             except Exception as upload_error:
@@ -82,8 +93,10 @@ class SupabaseStorage(Storage):
     def exists(self, name):
         """Check if file exists in Supabase storage"""
         try:
-            response = self.supabase.storage.from_(self.bucket_name).list(path=name)
-            return len(response) > 0
+            # Try to get the public URL and check if it's accessible
+            url = self.url(name)
+            response = requests.head(url)
+            return response.status_code == 200
         except:
             return False
 
