@@ -189,19 +189,48 @@ if not DEBUG:
         IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')
         
         if IMGBB_API_KEY:
-            DEFAULT_FILE_STORAGE = 'medical_project.imgbb_storage.ImgBBStorage'
+            # Modern Django storage configuration
+            STORAGES = {
+                "default": {
+                    "BACKEND": "medical_project.imgbb_storage.ImgBBStorage",
+                },
+                "staticfiles": {
+                    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+                },
+            }
             print(f"🔄 Using ImgBB storage for media files")
             print(f"🔑 ImgBB API key configured: {'Yes' if IMGBB_API_KEY else 'No'}")
             print(f"🌐 Images hosted on: ImgBB permanent URLs")
         else:
             print("❌ ImgBB API key not found, using local storage")
-            DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+            STORAGES = {
+                "default": {
+                    "BACKEND": "django.core.files.storage.FileSystemStorage",
+                },
+                "staticfiles": {
+                    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+                },
+            }
     except Exception as e:
         print(f"❌ ImgBB setup failed, falling back to local storage: {e}")
-        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+        STORAGES = {
+            "default": {
+                "BACKEND": "django.core.files.storage.FileSystemStorage",
+            },
+            "staticfiles": {
+                "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            },
+        }
 else:
     # Local storage for development
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # Ensure media directory exists for local fallback
 os.makedirs(MEDIA_ROOT, exist_ok=True)

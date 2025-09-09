@@ -228,7 +228,7 @@ class PatientReport(models.Model):
 class TreatmentStepPhoto(models.Model):
     """Multiple photos can be attached to a TreatmentStep by the patient."""
     step = models.ForeignKey(TreatmentStep, on_delete=models.CASCADE, related_name='photos')
-    image = models.ImageField(upload_to='treatment_step_photos/')
+    image = models.ImageField(upload_to='treatment_step_photos/', storage=default_storage)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
