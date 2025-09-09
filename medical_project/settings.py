@@ -173,7 +173,7 @@ STATICFILES_FINDERS = [
 ]
 
 # WhiteNoise configuration for serving static files in production
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Note: STATICFILES_STORAGE is handled in STORAGES configuration below
 
 # Force collection of static files in production
 WHITENOISE_USE_FINDERS = True
@@ -195,7 +195,7 @@ if not DEBUG:
                     "BACKEND": "medical_project.imgbb_storage.ImgBBStorage",
                 },
                 "staticfiles": {
-                    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+                    "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
                 },
             }
             print(f"🔄 Using ImgBB storage for media files")
@@ -208,7 +208,7 @@ if not DEBUG:
                     "BACKEND": "django.core.files.storage.FileSystemStorage",
                 },
                 "staticfiles": {
-                    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+                    "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
                 },
             }
     except Exception as e:
@@ -218,7 +218,7 @@ if not DEBUG:
                 "BACKEND": "django.core.files.storage.FileSystemStorage",
             },
             "staticfiles": {
-                "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+                "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
             },
         }
 else:
@@ -228,7 +228,7 @@ else:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
 
