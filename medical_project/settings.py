@@ -183,23 +183,21 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
-# Use GitHub storage for actual file storage, but serve through Render domain
+# Use ImgBB storage for actual file storage in production
 if not DEBUG:
     try:
-        GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
-        GITHUB_REPO = os.environ.get('GITHUB_REPO', 'hadialghoul/medical-photos-storage')
+        IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')
         
-        if GITHUB_TOKEN and GITHUB_REPO:
-            DEFAULT_FILE_STORAGE = 'medical_project.github_storage.GitHubStorage'
-            # Keep MEDIA_URL as Render domain - the proxy will handle GitHub fetching
-            print(f"🔄 Using GitHub storage: {GITHUB_REPO}")
-            print(f"🔑 GitHub token configured: {'Yes' if GITHUB_TOKEN else 'No'}")
-            print(f"🌐 Media served through: Render domain (proxied from GitHub)")
+        if IMGBB_API_KEY:
+            DEFAULT_FILE_STORAGE = 'medical_project.imgbb_storage.ImgBBStorage'
+            print(f"🔄 Using ImgBB storage for media files")
+            print(f"🔑 ImgBB API key configured: {'Yes' if IMGBB_API_KEY else 'No'}")
+            print(f"🌐 Images hosted on: ImgBB permanent URLs")
         else:
-            print("❌ GitHub credentials not found, using local storage")
+            print("❌ ImgBB API key not found, using local storage")
             DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     except Exception as e:
-        print(f"❌ GitHub setup failed, falling back to local storage: {e}")
+        print(f"❌ ImgBB setup failed, falling back to local storage: {e}")
         DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 else:
     # Local storage for development
