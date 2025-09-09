@@ -168,10 +168,27 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
-# Use local storage for now to avoid conflicts
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Use GitHub storage for production, local storage for development
+if not DEBUG:
+    try:
+        GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+        GITHUB_REPO = os.environ.get('GITHUB_REPO', 'hadialghoul/medical-photos-storage')
+        
+        if GITHUB_TOKEN and GITHUB_REPO:
+            DEFAULT_FILE_STORAGE = 'medical_project.github_storage.GitHubStorage'
+            MEDIA_URL = f'https://raw.githubusercontent.com/{GITHUB_REPO}/main/'
+            print(f"🔄 Using GitHub storage: {GITHUB_REPO}")
+        else:
+            print("❌ GitHub credentials not found, using local storage")
+            DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    except Exception as e:
+        print(f"❌ GitHub setup failed, falling back to local storage: {e}")
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+else:
+    # Local storage for development
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
-# Ensure media directory exists
+# Ensure media directory exists for local fallback
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # Default primary key field type
