@@ -5,6 +5,7 @@ import random
 from django.conf import settings
 from django.utils import timezone
 from django.core.mail import send_mail
+from django.core.files.storage import default_storage
 
 
 class CustomUser(AbstractUser):
@@ -64,7 +65,11 @@ class TreatmentStep(models.Model):
     treatment = models.ForeignKey(PatientTreatment, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
     description = models.TextField()
-    image = models.ImageField(upload_to='treatment_steps/', blank=True, null=True)
+    image = models.ImageField(
+        upload_to='treatment_steps/', 
+        blank=True, 
+        null=True
+    )
     duration_days = models.PositiveIntegerField()
     start_date = models.DateField(default=timezone.now)
     is_active = models.BooleanField(default=False)  # Only one step should be active at a time
@@ -168,7 +173,11 @@ Your Medical Treatment Team
 class Treatment(models.Model):
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name='main_treatment')  # changed related_name
     current_stage = models.PositiveIntegerField(default=1)
-    qr_image = models.ImageField(upload_to='qr_codes/', blank=True, null=True)  # QR code image
+    qr_image = models.ImageField(
+        upload_to='qr_codes/', 
+        blank=True, 
+        null=True
+    )  # QR code image
 
     def __str__(self):
         return f"Treatment for {self.patient} - Stage {self.current_stage}"
@@ -177,7 +186,11 @@ class PatientReport(models.Model):
     """Store generated PDF reports for patients"""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    report_file = models.FileField(upload_to='patient_reports/', null=True, blank=True)
+    report_file = models.FileField(
+        upload_to='patient_reports/', 
+        null=True, 
+        blank=True
+    )
     generated_at = models.DateTimeField(auto_now_add=True)
     report_period_start = models.DateField(null=True, blank=True)
     report_period_end = models.DateField(null=True, blank=True)
@@ -221,3 +234,19 @@ class TreatmentStepPhoto(models.Model):
 
     def __str__(self):
         return f"Photo for {self.step.name} ({self.step.treatment.patient.user.email})"
+
+    def save(self, *args, **kwargs):
+        """Custom save method with detailed logging for debugging"""
+        print(f"🔄 Saving photo for step: {self.step.name} (ID: {self.step.id})")
+        if self.step.treatment and self.step.treatment.patient:
+            print(f"📧 Patient: {self.step.treatment.patient.user.email}")
+        else:
+            print("⚠️ No patient associated with this step")
+        
+        # Debug storage information
+        storage = self.image.storage
+        print(f"📦 Storage backend: {storage.__class__.__name__}")
+        print(f"🗂️ Storage module: {storage.__class__.__module__}")
+        
+        super().save(*args, **kwargs)
+        print(f"✅ Photo saved with URL: {self.image.url}")
