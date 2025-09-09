@@ -25,24 +25,37 @@ class SupabaseStorage(Storage):
             content.seek(0)
             file_data = content.read()
             
-            # Upload to Supabase storage
-            response = self.supabase.storage.from_(self.bucket_name).upload(
-                path=unique_name,
-                file=file_data,
-                file_options={
-                    "content-type": self._get_content_type(name),
-                    "upsert": True
-                }
-            )
+            print(f"🔄 Uploading to Supabase: {unique_name}")
+            print(f"🔄 Bucket: {self.bucket_name}")
+            print(f"🔄 File size: {len(file_data)} bytes")
             
-            if response.status_code == 200:
+            # Upload to Supabase storage
+            try:
+                response = self.supabase.storage.from_(self.bucket_name).upload(
+                    path=unique_name,
+                    file=file_data,
+                    file_options={
+                        "content-type": self._get_content_type(name),
+                        "upsert": True
+                    }
+                )
+                
+                print(f"✅ Supabase upload response: {response}")
                 return unique_name
-            else:
-                raise Exception(f"Upload failed: {response}")
+                
+            except Exception as upload_error:
+                print(f"❌ Supabase upload failed: {upload_error}")
+                # If upload fails, fall back to local storage temporarily
+                return self._save_locally(name, content)
                 
         except Exception as e:
-            print(f"Supabase upload error: {e}")
-            raise
+            print(f"❌ Supabase upload error: {e}")
+            return self._save_locally(name, content)
+
+    def _save_locally(self, name, content):
+        """Fallback to save locally if Supabase fails"""
+        from django.core.files.storage import default_storage
+        return default_storage._save(name, content)
 
     def _open(self, name, mode='rb'):
         """Open file from Supabase storage"""
