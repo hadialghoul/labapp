@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
+from django.urls import re_path
+from .views import debug_media_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -10,9 +13,10 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
 ]
 
-# Serve media files in both development and production
-# Note: In a high-traffic production environment, you'd typically use a CDN or separate media server
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Debug media serving with logging
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', debug_media_view, name='media'),
+]
 
 # Serve static files in both development and production
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

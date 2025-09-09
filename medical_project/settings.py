@@ -139,6 +139,21 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Logging configuration to debug media files
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -168,28 +183,14 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
-# Use GitHub storage for production, local storage for development
-if not DEBUG:
-    try:
-        GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
-        GITHUB_REPO = os.environ.get('GITHUB_REPO', 'hadialghoul/medical-photos-storage')
-        
-        if GITHUB_TOKEN and GITHUB_REPO:
-            DEFAULT_FILE_STORAGE = 'medical_project.github_storage.GitHubStorage'
-            MEDIA_URL = f'https://raw.githubusercontent.com/{GITHUB_REPO}/main/'
-            print(f"🔄 Using GitHub storage: {GITHUB_REPO}")
-        else:
-            print("❌ GitHub credentials not found, using local storage")
-            DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    except Exception as e:
-        print(f"❌ GitHub setup failed, falling back to local storage: {e}")
-        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-else:
-    # Local storage for development
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Use local storage and serve through Django on Render
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
-# Ensure media directory exists for local fallback
+# Ensure media directory exists
 os.makedirs(MEDIA_ROOT, exist_ok=True)
+
+# For production, we'll serve media files through Django
+# Note: In production, files are ephemeral but this allows immediate access
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
