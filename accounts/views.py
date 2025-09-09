@@ -55,7 +55,7 @@ curl examples
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics, permissions
 from django.contrib.auth import get_user_model
 from .models import EmailVerification
 from django.core.mail import send_mail
@@ -713,3 +713,75 @@ class SimpleReportView(View):
             
         except Exception as e:
             return HttpResponse(f"Failed to view report: {str(e)}", status=500)
+
+
+class TreatmentStepPhotoListCreate(generics.ListCreateAPIView):
+    """Create and list photos for a specific treatment step"""
+    serializer_class = TreatmentStepPhotoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [CombinedJWTAuthentication, SessionAuthentication]
+
+    def get_queryset(self):
+        step_id = self.kwargs['step_id']
+        user = self.request.user
+        
+        # Allow access if user is patient who owns the step or doctor assigned to patient
+        if hasattr(user, 'patient'):
+            return TreatmentStepPhoto.objects.filter(
+                step_id=step_id,
+                step__treatment__patient=user.patient
+            ).order_by('-uploaded_at')
+        elif hasattr(user, 'doctor'):
+            return TreatmentStepPhoto.objects.filter(
+                step_id=step_id,
+                step__treatment__patient__doctor=user.doctor
+            ).order_by('-uploaded_at')
+        else:
+            return TreatmentStepPhoto.objects.none()
+
+    def perform_create(self, serializer):
+        step_id = self.kwargs['step_id']
+        user = self.request.user
+        
+        # Verify the step exists and user has permission
+        try:
+            if hasattr(user, 'patient'):
+                step = TreatmentStep.objects.get(
+                    id=step_id,
+                    treatment__patient=user.patient
+                )
+            elif hasattr(user, 'doctor'):
+                step = TreatmentStep.objects.get(
+                    id=step_id,
+                    treatment__patient__doctor=user.doctor
+                )
+            else:
+                raise PermissionDenied("You do not have permission to upload photos for this step.")
+        except TreatmentStep.DoesNotExist:
+            raise PermissionDenied("Treatment step not found or you don't have permission.")
+        
+        # Save with the step and user
+        serializer.save(step=step, uploaded_by=user)
+
+
+class TreatmentStepPhotoDetail(generics.RetrieveDestroyAPIView):
+    """Retrieve and delete a specific treatment step photo"""
+    serializer_class = TreatmentStepPhotoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [CombinedJWTAuthentication, SessionAuthentication]
+
+    def get_queryset(self):
+        user = self.request.user
+        # Allow patient owner or the assigned doctor to access photos
+        if hasattr(user, 'patient'):
+            return TreatmentStepPhoto.objects.filter(step__treatment__patient=user.patient)
+        if hasattr(user, 'doctor'):
+            return TreatmentStepPhoto.objects.filter(step__treatment__patient__doctor=user.doctor)
+        raise PermissionDenied("You do not have permission to access these photos.")
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        # Only the patient who owns the photo may delete it
+        if not (hasattr(user, 'patient') and instance.step.treatment.patient == user.patient):
+            raise PermissionDenied("Only the patient can delete their own photos.")
+        instance.delete()
