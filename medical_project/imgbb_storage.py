@@ -25,6 +25,7 @@ class ImgBBStorage(Storage):
         try:
             if not self.api_key:
                 logger.error("❌ ImgBB API key not configured")
+                print("❌ ImgBB API key not configured - falling back to local storage")
                 return self._save_locally(name, content)
             
             # Generate unique filename
@@ -36,6 +37,10 @@ class ImgBBStorage(Storage):
             file_data = content.read()
             encoded_content = base64.b64encode(file_data).decode('utf-8')
             
+            print(f"🔄 IMGBB UPLOAD STARTING: {unique_name}")
+            print(f"🔄 File size: {len(file_data)} bytes")
+            print(f"🔑 API key present: {'Yes' if self.api_key else 'No'}")
+            
             logger.info(f"🔄 Uploading to ImgBB: {unique_name}")
             logger.info(f"🔄 File size: {len(file_data)} bytes")
             
@@ -46,14 +51,22 @@ class ImgBBStorage(Storage):
                 'name': unique_name,
             }
             
+            print(f"📡 Making API request to ImgBB...")
+            
             # Upload to ImgBB
             response = requests.post(self.api_url, data=data, timeout=30)
+            
+            print(f"📡 Response status: {response.status_code}")
+            print(f"📄 Response text: {response.text[:200]}...")
             
             if response.status_code == 200:
                 result = response.json()
                 if result.get('success'):
                     image_url = result['data']['url']
                     image_id = result['data']['id']
+                    
+                    print(f"✅ IMGBB UPLOAD SUCCESS: {unique_name}")
+                    print(f"🌐 URL: {image_url}")
                     
                     logger.info(f"✅ ImgBB upload successful: {unique_name}")
                     logger.info(f"🌐 URL: {image_url}")
@@ -67,13 +80,16 @@ class ImgBBStorage(Storage):
                     
                     return unique_name
                 else:
+                    print(f"❌ IMGBB API ERROR: {result}")
                     logger.error(f"❌ ImgBB API error: {result}")
                     return self._save_locally(name, content)
             else:
+                print(f"❌ IMGBB HTTP ERROR: {response.status_code} - {response.text}")
                 logger.error(f"❌ ImgBB upload failed: {response.status_code} - {response.text}")
                 return self._save_locally(name, content)
                 
         except Exception as e:
+            print(f"❌ IMGBB EXCEPTION: {e}")
             logger.error(f"❌ ImgBB upload error: {e}")
             return self._save_locally(name, content)
 
