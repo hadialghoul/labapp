@@ -183,14 +183,30 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
-# Use local storage and serve through Django on Render
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Use GitHub storage for actual file storage, but serve through Render domain
+if not DEBUG:
+    try:
+        GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+        GITHUB_REPO = os.environ.get('GITHUB_REPO', 'hadialghoul/medical-photos-storage')
+        
+        if GITHUB_TOKEN and GITHUB_REPO:
+            DEFAULT_FILE_STORAGE = 'medical_project.github_storage.GitHubStorage'
+            # Keep MEDIA_URL as Render domain - the proxy will handle GitHub fetching
+            print(f"🔄 Using GitHub storage: {GITHUB_REPO}")
+            print(f"🔑 GitHub token configured: {'Yes' if GITHUB_TOKEN else 'No'}")
+            print(f"🌐 Media served through: Render domain (proxied from GitHub)")
+        else:
+            print("❌ GitHub credentials not found, using local storage")
+            DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    except Exception as e:
+        print(f"❌ GitHub setup failed, falling back to local storage: {e}")
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+else:
+    # Local storage for development
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
-# Ensure media directory exists
+# Ensure media directory exists for local fallback
 os.makedirs(MEDIA_ROOT, exist_ok=True)
-
-# For production, we'll serve media files through Django
-# Note: In production, files are ephemeral but this allows immediate access
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

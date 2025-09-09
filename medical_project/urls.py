@@ -2,9 +2,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.static import serve
 from django.urls import re_path
-from .views import debug_media_view
+from .media_proxy import github_media_proxy
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -13,11 +12,16 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
 ]
 
-# Debug media serving with logging
-urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', debug_media_view, name='media'),
-]
-
 # Serve static files in both development and production
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Media file serving
+if settings.DEBUG:
+    # Development: serve local files directly
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # Production: proxy GitHub storage through Render domain
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', github_media_proxy, name='media'),
+    ]
 
