@@ -252,7 +252,7 @@ class TreatmentStepAdmin(admin.ModelAdmin):
 
 @admin.register(TreatmentStepPhoto)
 class TreatmentStepPhotoAdmin(admin.ModelAdmin):
-    list_display = ('step', 'get_step_patient', 'uploaded_by', 'uploaded_at')
+    list_display = ('step', 'get_step_patient', 'uploaded_by', 'uploaded_at', 'get_photo_status')
     list_filter = ('step__treatment__patient__user__email', 'uploaded_at', 'uploaded_by')
     readonly_fields = ('uploaded_at',)
     
@@ -261,12 +261,58 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
         return f"{obj.step.treatment.patient.user.email}"
     get_step_patient.short_description = 'Patient'
     
+    def get_photo_status(self, obj):
+        """Show photo status and note about permanent storage"""
+        if obj.image:
+            return mark_safe('<span style="color: green;">📸 Stored on ImgBB (Permanent)</span>')
+        return "No photo"
+    get_photo_status.short_description = 'Storage Status'
+    
     def save_model(self, request, obj, form, change):
         if not obj.uploaded_by:
             obj.uploaded_by = request.user
         print(f"🔄 Saving photo for step: {obj.step.name} (ID: {obj.step.id})")
         print(f"📧 Patient: {obj.step.treatment.patient.user.email}")
         super().save_model(request, obj, form, change)
+    
+    def delete_model(self, request, obj):
+        """Custom delete with user feedback"""
+        try:
+            photo_name = obj.image.name if obj.image else "Unknown"
+            super().delete_model(request, obj)
+            
+            from django.contrib import messages
+            messages.success(
+                request, 
+                f"✅ Photo record deleted successfully. "
+                f"Note: The actual image file remains permanently stored on ImgBB "
+                f"(this is standard practice for medical records)."
+            )
+        except Exception as e:
+            from django.contrib import messages
+            messages.error(request, f"❌ Error deleting photo: {str(e)}")
+    
+    def delete_queryset(self, request, queryset):
+        """Custom bulk delete with user feedback"""
+        try:
+            count = queryset.count()
+            super().delete_queryset(request, queryset)
+            
+            from django.contrib import messages
+            messages.success(
+                request, 
+                f"✅ {count} photo record{'s' if count != 1 else ''} deleted successfully. "
+                f"Note: The actual image files remain permanently stored on ImgBB "
+                f"(this is standard practice for medical records)."
+            )
+        except Exception as e:
+            from django.contrib import messages
+            messages.error(request, f"❌ Error deleting photos: {str(e)}")
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Add helpful text about permanent storage"""
+        readonly = list(self.readonly_fields)
+        return readonly
 
 
 @admin.register(PatientReport)

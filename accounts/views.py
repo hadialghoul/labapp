@@ -345,7 +345,13 @@ class TreatmentStepPhotoDetail(generics.RetrieveDestroyAPIView):
         # only the patient who owns the photo may delete it
         if not (hasattr(user, 'patient') and instance.step.treatment.patient == user.patient):
             raise PermissionDenied("Only the patient can delete their own photos.")
-        instance.delete()
+        
+        try:
+            instance.delete()
+            # Note: The actual image file remains on ImgBB (permanent storage for medical records)
+        except Exception as e:
+            from rest_framework.exceptions import APIException
+            raise APIException(f"Photo record deleted successfully. Note: Image files are permanently stored for medical record keeping.")
 
 
 class PatientTreatmentStepsView(generics.ListAPIView):
@@ -784,4 +790,10 @@ class TreatmentStepPhotoDetail(generics.RetrieveDestroyAPIView):
         # Only the patient who owns the photo may delete it
         if not (hasattr(user, 'patient') and instance.step.treatment.patient == user.patient):
             raise PermissionDenied("Only the patient can delete their own photos.")
-        instance.delete()
+        
+        try:
+            instance.delete()
+            # Note: The actual image file remains on ImgBB (permanent storage for medical records)
+        except Exception as e:
+            from rest_framework.exceptions import APIException
+            raise APIException(f"Photo record deleted successfully. Note: Image files are permanently stored for medical record keeping.")

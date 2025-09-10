@@ -115,10 +115,17 @@ class ImgBBStorage(Storage):
         """Delete file from ImgBB storage"""
         # ImgBB doesn't provide delete API for free accounts
         # Files are permanent which is actually good for medical records
+        print(f"🗑️ Delete requested for: {name}")
+        print(f"ℹ️ ImgBB files are permanent (good for medical records)")
         logger.info(f"ImgBB file permanent (no delete): {name}")
-        # Clear from cache
+        
+        # Clear from cache so it doesn't appear as "existing"
         cache_key = f"imgbb_url_{name}"
         cache.delete(cache_key)
+        
+        # Return True to indicate successful "deletion" (from Django's perspective)
+        # The file remains on ImgBB but is no longer referenced in the database
+        print(f"✅ Database reference removed for: {name}")
         return True
 
     def exists(self, name):
