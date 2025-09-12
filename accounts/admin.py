@@ -367,8 +367,9 @@ class PatientReportAdmin(admin.ModelAdmin):
         ('Report Information', {
             'fields': ('patient', 'title', 'generated_by', 'generated_at')
         }),
-        ('File Details', {
-            'fields': ('report_file', 'filename', 'file_size')
+        ('File Upload', {
+            'fields': ('report_file',),
+            'description': 'Upload PDF file (will be stored securely in database)'
         }),
         ('Report Period', {
             'fields': ('report_period_start', 'report_period_end'),
@@ -395,9 +396,20 @@ class PatientReportAdmin(admin.ModelAdmin):
     get_download_link.short_description = 'Download'
     
     def save_model(self, request, obj, form, change):
-        if not change:  # If creating new report
-            obj.generated_by = request.user
-        super().save_model(request, obj, form, change)
+        try:
+            if not change:  # If creating new report
+                obj.generated_by = request.user
+            super().save_model(request, obj, form, change)
+            
+            # Success message
+            if not change:
+                self.message_user(request, f"✅ Report successfully created for {obj.patient.user.email}", level='SUCCESS')
+                
+        except Exception as e:
+            # Log the error and show user-friendly message
+            print(f"❌ Error saving PatientReport: {e}")
+            self.message_user(request, f"❌ Error saving report: {str(e)}", level='ERROR')
+            raise  # Re-raise to prevent partial save
     
     def get_queryset(self, request):
         """Optimize database queries"""

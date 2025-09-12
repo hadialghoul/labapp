@@ -253,15 +253,20 @@ class PatientReport(models.Model):
     
     def save(self, *args, **kwargs):
         """Convert uploaded file to binary storage for production reliability"""
-        if self.report_file and not self.report_data:
-            # Read the file and store as binary data
-            self.report_file.open()
-            self.report_data = self.report_file.read()
-            self.report_file.close()
-            
-            # Store the original filename
-            if not self.original_filename:
-                self.original_filename = self.report_file.name.split('/')[-1]
+        try:
+            if self.report_file and not self.report_data:
+                # Read the file and store as binary data
+                self.report_file.seek(0)  # Go to beginning of file
+                self.report_data = self.report_file.read()
+                
+                # Store the original filename
+                if not self.original_filename:
+                    self.original_filename = self.report_file.name.split('/')[-1]
+                    
+                print(f"✅ Converted PDF to binary storage: {self.original_filename}")
+        except Exception as e:
+            print(f"❌ Error processing file: {e}")
+            # Continue with save even if file processing fails
         
         super().save(*args, **kwargs)
     
