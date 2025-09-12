@@ -6,6 +6,10 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.core.files.storage import default_storage
+from django.core.files.storage import FileSystemStorage
+
+# Create a local file storage for PDFs (since ImgBB only supports images)
+local_file_storage = FileSystemStorage()
 
 
 class CustomUser(AbstractUser):
@@ -183,13 +187,21 @@ class Treatment(models.Model):
         return f"Treatment for {self.patient} - Stage {self.current_stage}"
 
 class PatientReport(models.Model):
-    """Store generated PDF reports for patients"""
+    """Store generated PDF reports for patients
+    
+    NOTE: This model uses local file storage instead of ImgBB because:
+    - ImgBB only supports image files (JPG, PNG, GIF, etc.)  
+    - PDF reports need regular file storage
+    - This ensures report uploads don't cause 502 errors
+    """
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     report_file = models.FileField(
         upload_to='patient_reports/', 
+        storage=local_file_storage,  # Use local storage for PDFs, not ImgBB
         null=True, 
-        blank=True
+        blank=True,
+        help_text="PDF report file (stored locally, not on ImgBB)"
     )
     generated_at = models.DateTimeField(auto_now_add=True)
     report_period_start = models.DateField(null=True, blank=True)

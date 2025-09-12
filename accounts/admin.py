@@ -344,7 +344,18 @@ class PatientReportAdmin(admin.ModelAdmin):
     def get_download_link(self, obj):
         """Provide download link for the report"""
         if obj.report_file:
-            return mark_safe(f'<a href="{obj.report_file.url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
+            try:
+                # Handle different storage backends safely
+                if hasattr(obj.report_file, 'url'):
+                    url = obj.report_file.url
+                    return mark_safe(f'<a href="{url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
+                else:
+                    # Fallback for storage backends without direct URL access
+                    return mark_safe(f'<span style="color: #666;">📄 {obj.filename}</span>')
+            except Exception as e:
+                # Log the error but don't crash the admin
+                print(f"Error generating download link for report {obj.id}: {e}")
+                return mark_safe(f'<span style="color: #d32f2f;">❌ File access error</span>')
         return "No file"
     get_download_link.short_description = 'Download'
     
