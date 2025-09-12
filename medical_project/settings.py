@@ -319,6 +319,6 @@ DEFAULT_FROM_EMAIL = 'caldentalab@gmail.com'
 # Cron jobs configuration (development only)
 if DEBUG:
     CRONJOBS = [
-        # Check for finished treatment steps every hour and send notifications with auto-progress
-        ('0 * * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
+        # TEMPORARILY DISABLED - Check for finished treatment steps every hour and send notifications with auto-progress
+        # ('0 * * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
     ]
