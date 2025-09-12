@@ -324,6 +324,45 @@ class PatientReportAdmin(admin.ModelAdmin):
     list_editable = ('is_active',)
     ordering = ('-generated_at',)
     
+    def get_urls(self):
+        """Add custom URLs for PDF download"""
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path('<int:report_id>/download/', self.admin_site.admin_view(self.download_pdf), name='patientreport-download'),
+        ]
+        return custom_urls + urls
+    
+    def download_pdf(self, request, report_id):
+        """Download PDF from binary storage"""
+        try:
+            from django.http import HttpResponse
+            
+            report = PatientReport.objects.get(id=report_id)
+            
+            # Get PDF data from binary field or file field
+            if report.report_data:
+                pdf_data = report.report_data
+            elif report.report_file:
+                report.report_file.open()
+                pdf_data = report.report_file.read()
+                report.report_file.close()
+            else:
+                return HttpResponse("No PDF data available", status=404)
+            
+            # Create response with PDF
+            response = HttpResponse(pdf_data, content_type='application/pdf')
+            filename = report.original_filename or f"report_{report.patient.user.username}_{report.generated_at.strftime('%Y%m%d')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except PatientReport.DoesNotExist:
+            return HttpResponse("Report not found", status=404)
+        except Exception as e:
+            print(f"Error downloading PDF {report_id}: {e}")
+            return HttpResponse("Error downloading PDF", status=500)
+    
     fieldsets = (
         ('Report Information', {
             'fields': ('patient', 'title', 'generated_by', 'generated_at')
@@ -342,16 +381,12 @@ class PatientReportAdmin(admin.ModelAdmin):
     )
     
     def get_download_link(self, obj):
-        """Provide download link for the report"""
-        if obj.report_file:
+        """Provide download link for the report (using binary data)"""
+        if obj.report_data or obj.report_file:
             try:
-                # Handle different storage backends safely
-                if hasattr(obj.report_file, 'url'):
-                    url = obj.report_file.url
-                    return mark_safe(f'<a href="{url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
-                else:
-                    # Fallback for storage backends without direct URL access
-                    return mark_safe(f'<span style="color: #666;">📄 {obj.filename}</span>')
+                # Use custom download view for binary data
+                download_url = f'/admin/accounts/patientreport/{obj.id}/download/'
+                return mark_safe(f'<a href="{download_url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
             except Exception as e:
                 # Log the error but don't crash the admin
                 print(f"Error generating download link for report {obj.id}: {e}")

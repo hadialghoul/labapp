@@ -189,19 +189,25 @@ class Treatment(models.Model):
 class PatientReport(models.Model):
     """Store generated PDF reports for patients
     
-    NOTE: This model uses local file storage instead of ImgBB because:
-    - ImgBB only supports image files (JPG, PNG, GIF, etc.)  
-    - PDF reports need regular file storage
-    - This ensures report uploads don't cause 502 errors
+    NOTE: For production App/Play Store deployment:
+    - PDF data stored in database (binary field) for reliability
+    - Local file storage is ephemeral on Render/Heroku
+    - Database storage ensures PDFs survive server restarts
     """
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Store PDF as binary data in database (reliable for production)
+    report_data = models.BinaryField(null=True, blank=True, help_text="PDF file stored as binary data")
+    original_filename = models.CharField(max_length=255, null=True, blank=True, help_text="Original PDF filename")
+    
+    # Keep file field for backward compatibility and admin uploads
     report_file = models.FileField(
         upload_to='patient_reports/', 
-        storage=local_file_storage,  # Use local storage for PDFs, not ImgBB
+        storage=local_file_storage,  
         null=True, 
         blank=True,
-        help_text="PDF report file (stored locally, not on ImgBB)"
+        help_text="PDF file (will be converted to binary storage)"
     )
     generated_at = models.DateTimeField(auto_now_add=True)
     report_period_start = models.DateField(null=True, blank=True)
@@ -219,8 +225,15 @@ class PatientReport(models.Model):
     @property
     def file_size(self):
         """Get file size in a readable format"""
-        if self.report_file and hasattr(self.report_file, 'size'):
+        size = None
+        
+        # Try to get size from binary data first
+        if self.report_data:
+            size = len(self.report_data)
+        elif self.report_file and hasattr(self.report_file, 'size'):
             size = self.report_file.size
+        
+        if size is not None:
             if size < 1024:
                 return f"{size} B"
             elif size < 1024 * 1024:
@@ -232,9 +245,29 @@ class PatientReport(models.Model):
     @property
     def filename(self):
         """Get just the filename without path"""
-        if self.report_file:
+        if self.original_filename:
+            return self.original_filename
+        elif self.report_file:
             return self.report_file.name.split('/')[-1]
         return "No file"
+    
+    def save(self, *args, **kwargs):
+        """Convert uploaded file to binary storage for production reliability"""
+        if self.report_file and not self.report_data:
+            # Read the file and store as binary data
+            self.report_file.open()
+            self.report_data = self.report_file.read()
+            self.report_file.close()
+            
+            # Store the original filename
+            if not self.original_filename:
+                self.original_filename = self.report_file.name.split('/')[-1]
+        
+        super().save(*args, **kwargs)
+    
+    def get_pdf_data(self):
+        """Get PDF data for download (from binary storage)"""
+        return self.report_data if self.report_data else None
 
 
 class TreatmentStepPhoto(models.Model):
