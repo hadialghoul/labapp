@@ -317,10 +317,10 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
 
 @admin.register(PatientReport)
 class PatientReportAdmin(admin.ModelAdmin):
-    list_display = ('patient', 'title', 'generated_at', 'generated_by', 'file_size', 'is_active', 'get_download_link')
+    list_display = ('patient', 'title', 'generated_at', 'generated_by', 'is_active', 'get_download_link')
     list_filter = ('is_active', 'generated_at', 'generated_by', 'patient__doctor')
     search_fields = ('patient__user__email', 'patient__user__username', 'title', 'notes')
-    readonly_fields = ('generated_at', 'file_size', 'filename')
+    readonly_fields = ('generated_at',)
     list_editable = ('is_active',)
     ordering = ('-generated_at',)
     
@@ -383,15 +383,18 @@ class PatientReportAdmin(admin.ModelAdmin):
     
     def get_download_link(self, obj):
         """Provide download link for the report (using binary data)"""
-        if obj.report_data or obj.report_file:
-            try:
+        try:
+            # Check if we have either binary data or file
+            has_data = (hasattr(obj, 'report_data') and obj.report_data) or obj.report_file
+            
+            if has_data:
                 # Use custom download view for binary data
                 download_url = f'/admin/accounts/patientreport/{obj.id}/download/'
                 return mark_safe(f'<a href="{download_url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
-            except Exception as e:
-                # Log the error but don't crash the admin
-                print(f"Error generating download link for report {obj.id}: {e}")
-                return mark_safe(f'<span style="color: #d32f2f;">❌ File access error</span>')
+        except Exception as e:
+            # Log the error but don't crash the admin
+            print(f"Error generating download link for report {obj.id}: {e}")
+            return mark_safe(f'<span style="color: #d32f2f;">❌ File access error</span>')
         return "No file"
     get_download_link.short_description = 'Download'
     

@@ -225,30 +225,36 @@ class PatientReport(models.Model):
     @property
     def file_size(self):
         """Get file size in a readable format"""
-        size = None
-        
-        # Try to get size from binary data first
-        if self.report_data:
-            size = len(self.report_data)
-        elif self.report_file and hasattr(self.report_file, 'size'):
-            size = self.report_file.size
-        
-        if size is not None:
-            if size < 1024:
-                return f"{size} B"
-            elif size < 1024 * 1024:
-                return f"{size / 1024:.1f} KB"
-            else:
-                return f"{size / (1024 * 1024):.1f} MB"
+        try:
+            size = None
+            
+            # Try to get size from binary data first
+            if hasattr(self, 'report_data') and self.report_data:
+                size = len(self.report_data)
+            elif self.report_file and hasattr(self.report_file, 'size'):
+                size = self.report_file.size
+            
+            if size is not None:
+                if size < 1024:
+                    return f"{size} B"
+                elif size < 1024 * 1024:
+                    return f"{size / 1024:.1f} KB"
+                else:
+                    return f"{size / (1024 * 1024):.1f} MB"
+        except Exception as e:
+            print(f"Error getting file_size: {e}")
         return "Unknown"
     
     @property
     def filename(self):
         """Get just the filename without path"""
-        if self.original_filename:
-            return self.original_filename
-        elif self.report_file:
-            return self.report_file.name.split('/')[-1]
+        try:
+            if hasattr(self, 'original_filename') and self.original_filename:
+                return self.original_filename
+            elif self.report_file:
+                return self.report_file.name.split('/')[-1]
+        except Exception as e:
+            print(f"Error getting filename: {e}")
         return "No file"
     
     def save(self, *args, **kwargs):
