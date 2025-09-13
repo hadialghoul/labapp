@@ -532,9 +532,7 @@ class DoctorPatientsReportsView(APIView):
 
 class DownloadReportView(APIView):
     """Download a specific pre-generated report"""
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [CombinedJWTAuthentication, SessionAuthentication]
-    
+    # No permission_classes or authentication_classes: handle manually for mobile/browser
     def get(self, request, report_id):
         import logging
         logger = logging.getLogger("django")
