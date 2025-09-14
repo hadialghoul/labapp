@@ -34,8 +34,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Box JWT config file path (should be set as an environment variable)
-BOX_CONFIG_PATH = os.environ.get('BOX_CONFIG_PATH', os.path.join(BASE_DIR, 'box_config.json'))
+
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:hxFjJYmSCfIgpNVxviVoQzYRXNHWXIaR@yamabiko.proxy.rlwy.net:59699/railway")
 # Quick-start development settings - unsuitable for production

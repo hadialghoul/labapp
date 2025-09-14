@@ -362,11 +362,11 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
 
 
 from django import forms
-from .box_utils import upload_pdf_to_box
+from .supabase_utils import upload_pdf_to_supabase
 from django.conf import settings
 
 class PatientReportAdminForm(forms.ModelForm):
-    pdf_upload = forms.FileField(label="Upload PDF to Box.com", required=False, help_text="Select a PDF to upload to Box.com. The shareable link will be saved.")
+    pdf_upload = forms.FileField(label="Upload PDF", required=False, help_text="Select a PDF to upload to Supabase Storage. The shareable link will be saved.")
 
     class Meta:
         model = PatientReport
@@ -407,7 +407,7 @@ class PatientReportAdmin(admin.ModelAdmin):
     get_download_link.short_description = 'Download'
 
     def save_model(self, request, obj, form, change):
-        # Handle PDF upload to Box.com
+    # Handle PDF upload to Supabase
         pdf_file = form.cleaned_data.get('pdf_upload')
         if pdf_file:
             # Save to a temp file
@@ -415,13 +415,13 @@ class PatientReportAdmin(admin.ModelAdmin):
                 for chunk in pdf_file.chunks():
                     tmp.write(chunk)
                 tmp_path = tmp.name
-            # Upload to Box
+            # Upload to Supabase
             try:
-                box_url = upload_pdf_to_box(
+                public_url = upload_pdf_to_supabase(
                     file_path=tmp_path,
                     file_name=pdf_file.name
                 )
-                obj.report_file_url = box_url
+                obj.report_file_url = public_url
             finally:
                 os.remove(tmp_path)
         if not change:
