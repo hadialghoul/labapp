@@ -16,7 +16,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DATABASE_PUBLIC_URL")  # Check both Railway URLs
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:hxFjJYmSCfIgpNVxviVoQzYRXNHWXIaR@yamabiko.proxy.rlwy.net:59699/railway")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -183,36 +183,24 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
-# Use ImgBB storage for actual file storage in production
-if not DEBUG:
-    try:
-        IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')
-        
-        if IMGBB_API_KEY:
-            # Modern Django storage configuration
-            STORAGES = {
-                "default": {
-                    "BACKEND": "medical_project.imgbb_storage.ImgBBStorage",
-                },
-                "staticfiles": {
-                    "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-                },
-            }
-            print(f"🔄 Using ImgBB storage for media files")
-            print(f"🔑 ImgBB API key configured: {'Yes' if IMGBB_API_KEY else 'No'}")
-            print(f"🌐 Images hosted on: ImgBB permanent URLs")
-        else:
-            print("❌ ImgBB API key not found, using local storage")
-            STORAGES = {
-                "default": {
-                    "BACKEND": "django.core.files.storage.FileSystemStorage",
-                },
-                "staticfiles": {
-                    "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-                },
-            }
-    except Exception as e:
-        print(f"❌ ImgBB setup failed, falling back to local storage: {e}")
+# Always use ImgBB storage if API key is set, fallback to local only if missing
+try:
+    IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')
+    if IMGBB_API_KEY:
+        # Modern Django storage configuration
+        STORAGES = {
+            "default": {
+                "BACKEND": "medical_project.imgbb_storage.ImgBBStorage",
+            },
+            "staticfiles": {
+                "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+            },
+        }
+        print(f"🔄 Using ImgBB storage for media files (ALL ENVIRONMENTS)")
+        print(f"🔑 ImgBB API key configured: {'Yes' if IMGBB_API_KEY else 'No'}")
+        print(f"🌐 Images hosted on: ImgBB permanent URLs")
+    else:
+        print("❌ ImgBB API key not found, using local storage")
         STORAGES = {
             "default": {
                 "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -221,8 +209,8 @@ if not DEBUG:
                 "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
             },
         }
-else:
-    # Local storage for development
+except Exception as e:
+    print(f"❌ ImgBB setup failed, falling back to local storage: {e}")
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -319,6 +307,6 @@ DEFAULT_FROM_EMAIL = 'caldentalab@gmail.com'
 # Cron jobs configuration (development only)
 if DEBUG:
     CRONJOBS = [
-        # TEMPORARILY DISABLED - Check for finished treatment steps every hour and send notifications with auto-progress
-        # ('0 * * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
+        # Check for finished treatment steps every hour and send notifications with auto-progress
+        ('0 * * * *', 'django.core.management.call_command', ['notify_finished_steps', '--auto-progress']),
     ]

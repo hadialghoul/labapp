@@ -532,15 +532,14 @@ class DoctorPatientsReportsView(APIView):
 
 class DownloadReportView(APIView):
     """Download a specific pre-generated report"""
-    # No permission_classes or authentication_classes: handle manually for mobile/browser
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [CombinedJWTAuthentication, SessionAuthentication]
+    
     def get(self, request, report_id):
-        import logging
-        logger = logging.getLogger("django")
         try:
-            # Always check for query parameter authentication for mobile
+            # Handle query parameter authentication for mobile
             auth_token = request.GET.get('auth')
-            logger.info(f"DownloadReportView: Received auth_token: {auth_token}")
-            if auth_token:
+            if auth_token and not hasattr(request, 'user') or request.user.is_anonymous:
                 from rest_framework_simplejwt.tokens import AccessToken
                 try:
                     token = AccessToken(auth_token)
@@ -548,21 +547,18 @@ class DownloadReportView(APIView):
                     from django.contrib.auth import get_user_model
                     User = get_user_model()
                     request.user = User.objects.get(id=user_id)
-                    logger.info(f"DownloadReportView: Authenticated user {request.user}")
-                except Exception as e:
-                    logger.error(f"DownloadReportView: Failed to authenticate with token: {e}")
-                    return Response({"error": "Invalid or expired token."}, status=status.HTTP_401_UNAUTHORIZED)
-
+                except:
+                    pass
+            
             # Check if user is a doctor
             if not hasattr(request.user, 'doctor'):
-                logger.warning("DownloadReportView: User is not a doctor.")
                 return Response(
-                    {"error": "Only doctors can view reports"}, 
+                    {"error": "Only doctors can download reports"}, 
                     status=status.HTTP_403_FORBIDDEN
                 )
-
+            
             doctor = request.user.doctor
-
+            
             # Get the report
             try:
                 from .models import PatientReport
@@ -571,28 +567,25 @@ class DownloadReportView(APIView):
                     is_active=True
                 )
             except PatientReport.DoesNotExist:
-                logger.warning("DownloadReportView: Report not found.")
                 return Response(
                     {"error": "Report not found or no longer available"}, 
                     status=status.HTTP_404_NOT_FOUND
                 )
-
+            
             # Check if doctor has permission to view this report
             if not (report.patient.doctor == doctor or request.user.is_staff or request.user.is_superuser):
-                logger.warning("DownloadReportView: Doctor does not have permission to view this report.")
                 return Response(
                     {"error": "You don't have permission to view this report"}, 
                     status=status.HTTP_403_FORBIDDEN
                 )
-
+            
             # Check if file exists
             if not report.report_file or not report.report_file.file:
-                logger.warning("DownloadReportView: Report file not found.")
                 return Response(
                     {"error": "Report file not found"}, 
                     status=status.HTTP_404_NOT_FOUND
                 )
-
+            
             # Serve the file
             try:
                 response = HttpResponse(
@@ -600,22 +593,26 @@ class DownloadReportView(APIView):
                     content_type='application/pdf'
                 )
                 filename = f"patient_report_{report.patient.user.username}_{report.generated_at.strftime('%Y%m%d')}.pdf"
-                # Always use inline display for mobile/browser
-                response['Content-Disposition'] = f'inline; filename="{filename}"'
+                
+                # For mobile browsers, use inline display instead of attachment
+                if auth_token:
+                    response['Content-Disposition'] = f'inline; filename="{filename}"'
+                else:
+                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    
                 response['Content-Length'] = report.report_file.size
-                logger.info(f"DownloadReportView: Serving report {filename} to user {request.user}")
+                
                 return response
+                
             except Exception as e:
-                logger.error(f"DownloadReportView: Failed to read report file: {e}")
                 return Response(
                     {"error": f"Failed to read report file: {str(e)}"}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-
+            
         except Exception as e:
-            logger.error(f"DownloadReportView: General error: {e}")
             return Response(
-                {"error": f"Failed to open report: {str(e)}"}, 
+                {"error": f"Failed to download report: {str(e)}"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

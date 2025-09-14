@@ -6,10 +6,6 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.core.files.storage import default_storage
-from django.core.files.storage import FileSystemStorage
-
-# Create a local file storage for PDFs (since ImgBB only supports images)
-local_file_storage = FileSystemStorage()
 
 
 class CustomUser(AbstractUser):
@@ -187,27 +183,13 @@ class Treatment(models.Model):
         return f"Treatment for {self.patient} - Stage {self.current_stage}"
 
 class PatientReport(models.Model):
-    """Store generated PDF reports for patients
-    
-    NOTE: For production App/Play Store deployment:
-    - PDF data stored in database (binary field) for reliability
-    - Local file storage is ephemeral on Render/Heroku
-    - Database storage ensures PDFs survive server restarts
-    """
+    """Store generated PDF reports for patients"""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    
-    # Store PDF as binary data in database (reliable for production)
-    report_data = models.BinaryField(null=True, blank=True, help_text="PDF file stored as binary data")
-    original_filename = models.CharField(max_length=255, null=True, blank=True, help_text="Original PDF filename")
-    
-    # Keep file field for backward compatibility and admin uploads
     report_file = models.FileField(
         upload_to='patient_reports/', 
-        storage=local_file_storage,  
         null=True, 
-        blank=True,
-        help_text="PDF file (will be converted to binary storage)"
+        blank=True
     )
     generated_at = models.DateTimeField(auto_now_add=True)
     report_period_start = models.DateField(null=True, blank=True)
@@ -225,60 +207,22 @@ class PatientReport(models.Model):
     @property
     def file_size(self):
         """Get file size in a readable format"""
-        try:
-            size = None
-            
-            # Try to get size from binary data first
-            if hasattr(self, 'report_data') and self.report_data:
-                size = len(self.report_data)
-            elif self.report_file and hasattr(self.report_file, 'size'):
-                size = self.report_file.size
-            
-            if size is not None:
-                if size < 1024:
-                    return f"{size} B"
-                elif size < 1024 * 1024:
-                    return f"{size / 1024:.1f} KB"
-                else:
-                    return f"{size / (1024 * 1024):.1f} MB"
-        except Exception as e:
-            print(f"Error getting file_size: {e}")
+        if self.report_file and hasattr(self.report_file, 'size'):
+            size = self.report_file.size
+            if size < 1024:
+                return f"{size} B"
+            elif size < 1024 * 1024:
+                return f"{size / 1024:.1f} KB"
+            else:
+                return f"{size / (1024 * 1024):.1f} MB"
         return "Unknown"
     
     @property
     def filename(self):
         """Get just the filename without path"""
-        try:
-            if hasattr(self, 'original_filename') and self.original_filename:
-                return self.original_filename
-            elif self.report_file:
-                return self.report_file.name.split('/')[-1]
-        except Exception as e:
-            print(f"Error getting filename: {e}")
+        if self.report_file:
+            return self.report_file.name.split('/')[-1]
         return "No file"
-    
-    def save(self, *args, **kwargs):
-        """Convert uploaded file to binary storage for production reliability"""
-        try:
-            if self.report_file and not self.report_data:
-                # Read the file and store as binary data
-                self.report_file.seek(0)  # Go to beginning of file
-                self.report_data = self.report_file.read()
-                
-                # Store the original filename
-                if not self.original_filename:
-                    self.original_filename = self.report_file.name.split('/')[-1]
-                    
-                print(f"✅ Converted PDF to binary storage: {self.original_filename}")
-        except Exception as e:
-            print(f"❌ Error processing file: {e}")
-            # Continue with save even if file processing fails
-        
-        super().save(*args, **kwargs)
-    
-    def get_pdf_data(self):
-        """Get PDF data for download (from binary storage)"""
-        return self.report_data if self.report_data else None
 
 
 class TreatmentStepPhoto(models.Model):

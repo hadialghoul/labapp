@@ -317,59 +317,19 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
 
 @admin.register(PatientReport)
 class PatientReportAdmin(admin.ModelAdmin):
-    list_display = ('patient', 'title', 'generated_at', 'generated_by', 'is_active', 'get_download_link')
+    list_display = ('patient', 'title', 'generated_at', 'generated_by', 'file_size', 'is_active', 'get_download_link')
     list_filter = ('is_active', 'generated_at', 'generated_by', 'patient__doctor')
     search_fields = ('patient__user__email', 'patient__user__username', 'title', 'notes')
-    readonly_fields = ('generated_at',)
+    readonly_fields = ('generated_at', 'file_size', 'filename')
     list_editable = ('is_active',)
     ordering = ('-generated_at',)
-    
-    def get_urls(self):
-        """Add custom URLs for PDF download"""
-        from django.urls import path
-        urls = super().get_urls()
-        custom_urls = [
-            path('<int:report_id>/download/', self.admin_site.admin_view(self.download_pdf), name='patientreport-download'),
-        ]
-        return custom_urls + urls
-    
-    def download_pdf(self, request, report_id):
-        """Download PDF from binary storage"""
-        try:
-            from django.http import HttpResponse
-            
-            report = PatientReport.objects.get(id=report_id)
-            
-            # Get PDF data from binary field or file field
-            if report.report_data:
-                pdf_data = report.report_data
-            elif report.report_file:
-                report.report_file.open()
-                pdf_data = report.report_file.read()
-                report.report_file.close()
-            else:
-                return HttpResponse("No PDF data available", status=404)
-            
-            # Create response with PDF
-            response = HttpResponse(pdf_data, content_type='application/pdf')
-            filename = report.original_filename or f"report_{report.patient.user.username}_{report.generated_at.strftime('%Y%m%d')}.pdf"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except PatientReport.DoesNotExist:
-            return HttpResponse("Report not found", status=404)
-        except Exception as e:
-            print(f"Error downloading PDF {report_id}: {e}")
-            return HttpResponse("Error downloading PDF", status=500)
     
     fieldsets = (
         ('Report Information', {
             'fields': ('patient', 'title', 'generated_by', 'generated_at')
         }),
-        ('File Upload', {
-            'fields': ('report_file',),
-            'description': 'Upload PDF file (will be stored securely in database)'
+        ('File Details', {
+            'fields': ('report_file', 'filename', 'file_size')
         }),
         ('Report Period', {
             'fields': ('report_period_start', 'report_period_end'),
@@ -382,37 +342,16 @@ class PatientReportAdmin(admin.ModelAdmin):
     )
     
     def get_download_link(self, obj):
-        """Provide download link for the report (using binary data)"""
-        try:
-            # Check if we have either binary data or file
-            has_data = (hasattr(obj, 'report_data') and obj.report_data) or obj.report_file
-            
-            if has_data:
-                # Use custom download view for binary data
-                download_url = f'/admin/accounts/patientreport/{obj.id}/download/'
-                return mark_safe(f'<a href="{download_url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
-        except Exception as e:
-            # Log the error but don't crash the admin
-            print(f"Error generating download link for report {obj.id}: {e}")
-            return mark_safe(f'<span style="color: #d32f2f;">❌ File access error</span>')
+        """Provide download link for the report"""
+        if obj.report_file:
+            return mark_safe(f'<a href="{obj.report_file.url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
         return "No file"
     get_download_link.short_description = 'Download'
     
     def save_model(self, request, obj, form, change):
-        try:
-            if not change:  # If creating new report
-                obj.generated_by = request.user
-            super().save_model(request, obj, form, change)
-            
-            # Success message
-            if not change:
-                self.message_user(request, f"✅ Report successfully created for {obj.patient.user.email}", level='SUCCESS')
-                
-        except Exception as e:
-            # Log the error and show user-friendly message
-            print(f"❌ Error saving PatientReport: {e}")
-            self.message_user(request, f"❌ Error saving report: {str(e)}", level='ERROR')
-            raise  # Re-raise to prevent partial save
+        if not change:  # If creating new report
+            obj.generated_by = request.user
+        super().save_model(request, obj, form, change)
     
     def get_queryset(self, request):
         """Optimize database queries"""
