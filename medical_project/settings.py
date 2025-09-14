@@ -184,8 +184,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Media files configuration
 # Always use ImgBB storage if API key is set, fallback to local only if missing
+
+# --- DEBUG: Print IMGBB_API_KEY and storage backend at startup ---
+IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')
+print(f"[DEBUG] IMGBB_API_KEY loaded: {'YES' if IMGBB_API_KEY else 'NO'} (value: {IMGBB_API_KEY[:6]}...)")
 try:
-    IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')
     if IMGBB_API_KEY:
         # Modern Django storage configuration
         STORAGES = {
@@ -196,11 +199,9 @@ try:
                 "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
             },
         }
-        print(f"🔄 Using ImgBB storage for media files (ALL ENVIRONMENTS)")
-        print(f"🔑 ImgBB API key configured: {'Yes' if IMGBB_API_KEY else 'No'}")
-        print(f"🌐 Images hosted on: ImgBB permanent URLs")
+        print(f"[DEBUG] Using ImgBB storage for media files (ALL ENVIRONMENTS)")
     else:
-        print("❌ ImgBB API key not found, using local storage")
+        print("[DEBUG] ImgBB API key not found, using local storage")
         STORAGES = {
             "default": {
                 "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -209,8 +210,9 @@ try:
                 "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
             },
         }
+    print(f"[DEBUG] STORAGES['default']: {STORAGES['default']['BACKEND']}")
 except Exception as e:
-    print(f"❌ ImgBB setup failed, falling back to local storage: {e}")
+    print(f"[DEBUG] ImgBB setup failed, falling back to local storage: {e}")
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -219,6 +221,7 @@ except Exception as e:
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
+    print(f"[DEBUG] STORAGES['default']: {STORAGES['default']['BACKEND']}")
 
 # Ensure media directory exists for local fallback
 os.makedirs(MEDIA_ROOT, exist_ok=True)
