@@ -419,8 +419,7 @@ class PatientReportAdmin(admin.ModelAdmin):
             try:
                 box_url = upload_pdf_to_box(
                     file_path=tmp_path,
-                    file_name=pdf_file.name,
-                    developer_token=settings.BOX_DEVELOPER_TOKEN
+                    file_name=pdf_file.name
                 )
                 obj.report_file_url = box_url
             finally:
