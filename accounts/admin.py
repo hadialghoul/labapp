@@ -162,6 +162,17 @@ class PatientTreatmentAdmin(admin.ModelAdmin):
 class TreatmentStepAdmin(admin.ModelAdmin):
     list_display = ('name', 'get_patient_info', 'duration_days', 'start_date', 'is_active', 'is_completed', 'order', 'get_image_url')
     def save_model(self, request, obj, form, change):
+        # Auto-set order if not provided
+        if not obj.order:
+            last_step = TreatmentStep.objects.filter(
+                treatment=obj.treatment
+            ).order_by('-order').first()
+            obj.order = (last_step.order + 1) if last_step else 1
+        # If this step is being set as active, deactivate other steps for this patient
+        if obj.is_active:
+            TreatmentStep.objects.filter(
+                treatment=obj.treatment
+            ).exclude(id=obj.id).update(is_active=False)
         super().save_model(request, obj, form, change)
         # Debug print after first save
         print(f"[DEBUG][TreatmentStepAdmin.save_model] After first save: id={obj.id}, image={obj.image}, image_url={obj.image_url}")
@@ -172,6 +183,10 @@ class TreatmentStepAdmin(admin.ModelAdmin):
                     obj.image_url = obj.image.url
                     obj.save(update_fields=['image_url'])
                     print(f"[DEBUG][TreatmentStepAdmin.save_model] Updated image_url to {obj.image_url}")
+        # Add success message with patient info
+        from django.contrib import messages
+        patient_email = obj.treatment.patient.user.email
+        messages.success(request, f'Step "{obj.name}" saved for patient {patient_email}')
     def get_image_url(self, obj):
         return obj.image_url or "No ImgBB URL"
     get_image_url.short_description = 'Step ImgBB URL'
