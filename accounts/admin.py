@@ -360,8 +360,21 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
 
 
 
+
+from django import forms
+from .box_utils import upload_pdf_to_box
+from django.conf import settings
+
+class PatientReportAdminForm(forms.ModelForm):
+    pdf_upload = forms.FileField(label="Upload PDF to Box.com", required=False, help_text="Select a PDF to upload to Box.com. The shareable link will be saved.")
+
+    class Meta:
+        model = PatientReport
+        fields = '__all__'
+
 @admin.register(PatientReport)
 class PatientReportAdmin(admin.ModelAdmin):
+    form = PatientReportAdminForm
     list_display = ('patient', 'title', 'generated_at', 'generated_by', 'is_active', 'get_download_link')
     list_filter = ('is_active', 'generated_at', 'generated_by', 'patient__doctor')
     search_fields = ('patient__user__email', 'patient__user__username', 'title', 'notes')
@@ -374,7 +387,7 @@ class PatientReportAdmin(admin.ModelAdmin):
             'fields': ('patient', 'title', 'generated_by', 'generated_at')
         }),
         ('File Details', {
-            'fields': ('report_file_url',)
+            'fields': ('report_file_url', 'pdf_upload')
         }),
         ('Report Period', {
             'fields': ('report_period_start', 'report_period_end'),
@@ -394,7 +407,25 @@ class PatientReportAdmin(admin.ModelAdmin):
     get_download_link.short_description = 'Download'
 
     def save_model(self, request, obj, form, change):
-        if not change:  # If creating new report
+        # Handle PDF upload to Box.com
+        pdf_file = form.cleaned_data.get('pdf_upload')
+        if pdf_file:
+            # Save to a temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+                for chunk in pdf_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+            # Upload to Box
+            try:
+                box_url = upload_pdf_to_box(
+                    file_path=tmp_path,
+                    file_name=pdf_file.name,
+                    developer_token=settings.BOX_DEVELOPER_TOKEN
+                )
+                obj.report_file_url = box_url
+            finally:
+                os.remove(tmp_path)
+        if not change:
             obj.generated_by = request.user
         super().save_model(request, obj, form, change)
 
