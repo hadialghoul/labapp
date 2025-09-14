@@ -126,6 +126,14 @@ class TreatmentAdmin(admin.ModelAdmin):
         return obj.qr_image_url or "No ImgBB URL"
     get_qr_image_url.short_description = 'QR ImgBB URL'
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Force update of qr_image_url after image upload
+        if obj.qr_image and hasattr(obj.qr_image, 'url') and 'imgbb.com' in obj.qr_image.url:
+            if obj.qr_image_url != obj.qr_image.url:
+                obj.qr_image_url = obj.qr_image.url
+                obj.save(update_fields=['qr_image_url'])
+
 class TreatmentStepPhotoInline(admin.TabularInline):
     model = TreatmentStepPhoto
     extra = 1
@@ -149,6 +157,13 @@ class PatientTreatmentAdmin(admin.ModelAdmin):
 @admin.register(TreatmentStep)
 class TreatmentStepAdmin(admin.ModelAdmin):
     list_display = ('name', 'get_patient_info', 'duration_days', 'start_date', 'is_active', 'is_completed', 'order', 'get_image_url')
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Force update of image_url after image upload
+        if obj.image and hasattr(obj.image, 'url') and 'imgbb.com' in obj.image.url:
+            if obj.image_url != obj.image.url:
+                obj.image_url = obj.image.url
+                obj.save(update_fields=['image_url'])
     def get_image_url(self, obj):
         return obj.image_url or "No ImgBB URL"
     get_image_url.short_description = 'Step ImgBB URL'
@@ -262,6 +277,15 @@ class TreatmentStepAdmin(admin.ModelAdmin):
 @admin.register(TreatmentStepPhoto)
 class TreatmentStepPhotoAdmin(admin.ModelAdmin):
     list_display = ('step', 'get_step_patient', 'uploaded_by', 'uploaded_at', 'get_photo_status', 'get_image_url')
+    def save_model(self, request, obj, form, change):
+        if not obj.uploaded_by:
+            obj.uploaded_by = request.user
+        super().save_model(request, obj, form, change)
+        # Force update of image_url after image upload
+        if obj.image and hasattr(obj.image, 'url') and 'imgbb.com' in obj.image.url:
+            if obj.image_url != obj.image.url:
+                obj.image_url = obj.image.url
+                obj.save(update_fields=['image_url'])
     def get_image_url(self, obj):
         return obj.image_url or "No ImgBB URL"
     get_image_url.short_description = 'Photo ImgBB URL'
