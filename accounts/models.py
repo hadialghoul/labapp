@@ -243,47 +243,26 @@ class Treatment(models.Model):
                     print(f"[MODEL][Treatment][ERROR] {e}")
             print(f"[DEBUG][Treatment.save] id={self.id}, qr_image={self.qr_image}, qr_image_url={self.qr_image_url}")
 
+
+# Use Cloudinary storage for PDFs only
+
 class PatientReport(models.Model):
-    """Store generated PDF reports for patients"""
+    """Store generated PDF reports for patients (Box.com link)"""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    report_file = models.FileField(
-        upload_to='patient_reports/', 
-        null=True, 
-        blank=True
-    )
+    report_file_url = models.URLField(blank=True, null=True, help_text="Box.com shareable link to the PDF report")
     generated_at = models.DateTimeField(auto_now_add=True)
     report_period_start = models.DateField(null=True, blank=True)
     report_period_end = models.DateField(null=True, blank=True)
     title = models.CharField(max_length=200, default="Treatment Progress Report")
     notes = models.TextField(blank=True, help_text="Admin notes about this report")
     is_active = models.BooleanField(default=True, help_text="Set to False to hide from doctors")
-    
+
     class Meta:
         ordering = ['-generated_at']
-    
+
     def __str__(self):
         return f"Report for {self.patient.user.email} - {self.generated_at.strftime('%Y-%m-%d')}"
-    
-    @property
-    def file_size(self):
-        """Get file size in a readable format"""
-        if self.report_file and hasattr(self.report_file, 'size'):
-            size = self.report_file.size
-            if size < 1024:
-                return f"{size} B"
-            elif size < 1024 * 1024:
-                return f"{size / 1024:.1f} KB"
-            else:
-                return f"{size / (1024 * 1024):.1f} MB"
-        return "Unknown"
-    
-    @property
-    def filename(self):
-        """Get just the filename without path"""
-        if self.report_file:
-            return self.report_file.name.split('/')[-1]
-        return "No file"
 
 
 

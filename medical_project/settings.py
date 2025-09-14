@@ -1,3 +1,5 @@
+# Box.com developer token (store securely in environment variable)
+BOX_DEVELOPER_TOKEN = os.environ.get('BOX_DEVELOPER_TOKEN', '')
 """
 Django settings for medical_project project.
 
@@ -182,15 +184,12 @@ WHITENOISE_AUTOREFRESH = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Media files configuration
-# Always use ImgBB storage if API key is set, fallback to local only if missing
 
-# --- DEBUG: Print IMGBB_API_KEY and storage backend at startup ---
+# --- ImgBB for images (default storage) ---
 IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')
 print(f"[DEBUG] IMGBB_API_KEY loaded: {'YES' if IMGBB_API_KEY else 'NO'} (value: {IMGBB_API_KEY[:6]}...)")
 try:
     if IMGBB_API_KEY:
-        # Modern Django storage configuration
         STORAGES = {
             "default": {
                 "BACKEND": "medical_project.imgbb_storage.ImgBBStorage",
@@ -225,6 +224,18 @@ except Exception as e:
 
 # Ensure media directory exists for local fallback
 os.makedirs(MEDIA_ROOT, exist_ok=True)
+
+# --- Cloudinary for PDFs (PatientReport only) ---
+if 'cloudinary' not in INSTALLED_APPS:
+    INSTALLED_APPS += ['cloudinary', 'cloudinary_storage']
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
+}
+
+# Do NOT set DEFAULT_FILE_STORAGE globally, only use for PatientReport
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

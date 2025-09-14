@@ -359,21 +359,22 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
         return readonly
 
 
+
 @admin.register(PatientReport)
 class PatientReportAdmin(admin.ModelAdmin):
-    list_display = ('patient', 'title', 'generated_at', 'generated_by', 'file_size', 'is_active', 'get_download_link')
+    list_display = ('patient', 'title', 'generated_at', 'generated_by', 'is_active', 'get_download_link')
     list_filter = ('is_active', 'generated_at', 'generated_by', 'patient__doctor')
     search_fields = ('patient__user__email', 'patient__user__username', 'title', 'notes')
-    readonly_fields = ('generated_at', 'file_size', 'filename')
+    readonly_fields = ('generated_at',)
     list_editable = ('is_active',)
     ordering = ('-generated_at',)
-    
+
     fieldsets = (
         ('Report Information', {
             'fields': ('patient', 'title', 'generated_by', 'generated_at')
         }),
         ('File Details', {
-            'fields': ('report_file', 'filename', 'file_size')
+            'fields': ('report_file_url',)
         }),
         ('Report Period', {
             'fields': ('report_period_start', 'report_period_end'),
@@ -384,19 +385,19 @@ class PatientReportAdmin(admin.ModelAdmin):
             'description': 'Notes and visibility settings'
         }),
     )
-    
+
     def get_download_link(self, obj):
         """Provide download link for the report"""
-        if obj.report_file:
-            return mark_safe(f'<a href="{obj.report_file.url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
+        if obj.report_file_url:
+            return mark_safe(f'<a href="{obj.report_file_url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
         return "No file"
     get_download_link.short_description = 'Download'
-    
+
     def save_model(self, request, obj, form, change):
         if not change:  # If creating new report
             obj.generated_by = request.user
         super().save_model(request, obj, form, change)
-    
+
     def get_queryset(self, request):
         """Optimize database queries"""
         return super().get_queryset(request).select_related(
