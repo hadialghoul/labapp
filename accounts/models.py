@@ -95,6 +95,7 @@ class TreatmentStep(models.Model):
                 if self.image_url != self.image.url:
                     self.image_url = self.image.url
                     super().save(update_fields=['image_url'])
+        print(f"[DEBUG][TreatmentStep.save] id={self.id}, image={self.image}, image_url={self.image_url}")
 
     def is_finished(self):
         """Check if the step duration has passed"""
@@ -204,6 +205,7 @@ class Treatment(models.Model):
                 if self.qr_image_url != self.qr_image.url:
                     self.qr_image_url = self.qr_image.url
                     super().save(update_fields=['qr_image_url'])
+        print(f"[DEBUG][Treatment.save] id={self.id}, qr_image={self.qr_image}, qr_image_url={self.qr_image_url}")
 
 class PatientReport(models.Model):
     """Store generated PDF reports for patients"""
@@ -269,3 +271,4 @@ class TreatmentStepPhoto(models.Model):
                 if self.image_url != self.image.url:
                     self.image_url = self.image.url
                     super().save(update_fields=['image_url'])
+        print(f"[DEBUG][TreatmentStepPhoto.save] id={self.id}, image={self.image}, image_url={self.image_url}")
