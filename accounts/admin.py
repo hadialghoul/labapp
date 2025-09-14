@@ -362,11 +362,12 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
 
 
 from django import forms
-from .supabase_utils import upload_pdf_to_supabase
+import os
+from django.conf import settings
 from django.conf import settings
 
 class PatientReportAdminForm(forms.ModelForm):
-    pdf_upload = forms.FileField(label="Upload PDF", required=False, help_text="Select a PDF to upload to Supabase Storage. The shareable link will be saved.")
+    pdf_upload = forms.FileField(label="Upload PDF", required=False, help_text="Select a PDF to upload. The file will be saved locally.")
 
     class Meta:
         model = PatientReport
@@ -407,7 +408,7 @@ class PatientReportAdmin(admin.ModelAdmin):
     get_download_link.short_description = 'Download'
 
     def save_model(self, request, obj, form, change):
-    # Handle PDF upload to Supabase
+    # Handle PDF upload to local storage
         pdf_file = form.cleaned_data.get('pdf_upload')
         if pdf_file:
             # Save to a temp file
@@ -415,13 +416,16 @@ class PatientReportAdmin(admin.ModelAdmin):
                 for chunk in pdf_file.chunks():
                     tmp.write(chunk)
                 tmp_path = tmp.name
-            # Upload to Supabase
+            # Save to local media directory
             try:
-                public_url = upload_pdf_to_supabase(
-                    file_path=tmp_path,
-                    file_name=pdf_file.name
-                )
-                obj.report_file_url = public_url
+                media_dir = os.path.join(settings.MEDIA_ROOT, 'pdf_reports')
+                os.makedirs(media_dir, exist_ok=True)
+                safe_name = pdf_file.name.replace(' ', '_')
+                dest_path = os.path.join(media_dir, safe_name)
+                with open(dest_path, 'wb') as dest:
+                    with open(tmp_path, 'rb') as src:
+                        dest.write(src.read())
+                obj.report_file_url = settings.MEDIA_URL + 'pdf_reports/' + safe_name
             finally:
                 os.remove(tmp_path)
         if not change:

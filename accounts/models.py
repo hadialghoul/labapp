@@ -247,10 +247,10 @@ class Treatment(models.Model):
 # Use Cloudinary storage for PDFs only
 
 class PatientReport(models.Model):
-    """Store generated PDF reports for patients (Supabase Storage link)"""
+    """Store generated PDF reports for patients (local file link)"""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    report_file_url = models.URLField(blank=True, null=True, help_text="Supabase public link to the PDF report")
+    report_file_url = models.URLField(blank=True, null=True, help_text="Local link to the PDF report (in /media/pdf_reports)")
     generated_at = models.DateTimeField(auto_now_add=True)
     report_period_start = models.DateField(null=True, blank=True)
     report_period_end = models.DateField(null=True, blank=True)
