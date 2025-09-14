@@ -13,8 +13,9 @@ import os
 import dj_database_url
 from pathlib import Path
 
-# Box.com developer token (store securely in environment variable)
-BOX_DEVELOPER_TOKEN = os.environ.get('BOX_DEVELOPER_TOKEN', '')
+
+# Box JWT config file path (should be set as an environment variable)
+BOX_CONFIG_PATH = os.environ.get('BOX_CONFIG_PATH', os.path.join(BASE_DIR, 'box_config.json'))
 """
 Django settings for medical_project project.
 

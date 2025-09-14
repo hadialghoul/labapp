@@ -1,14 +1,18 @@
-import os
-from boxsdk import Client, OAuth2
 
-# Utility to upload a PDF to Box and return the shareable link
-def upload_pdf_to_box(file_path, file_name, developer_token, parent_folder_id='0'):
-    oauth2 = OAuth2(
-        client_id=None,  # Not needed for developer token
-        client_secret=None,  # Not needed for developer token
-        access_token=developer_token
-    )
-    client = Client(oauth2)
+import os
+from boxsdk import Client, JWTAuth
+from django.conf import settings
+
+
+# Utility to upload a PDF to Box and return the shareable link using JWT auth
+def upload_pdf_to_box(file_path, file_name, parent_folder_id='0'):
+    # Load Box JWT config path from Django settings
+    config_path = getattr(settings, 'BOX_CONFIG_PATH', None)
+    if not config_path or not os.path.exists(config_path):
+        raise Exception(f"Box config file not found at {config_path}. Set BOX_CONFIG_PATH in your settings or environment.")
+
+    auth = JWTAuth.from_settings_file(config_path)
+    client = Client(auth)
     folder = client.folder(folder_id=parent_folder_id)
     # Upload file
     uploaded_file = folder.upload(file_path, file_name=file_name)
@@ -17,5 +21,5 @@ def upload_pdf_to_box(file_path, file_name, developer_token, parent_folder_id='0
     return shared_link
 
 # Example usage:
-# link = upload_pdf_to_box('/path/to/file.pdf', 'report.pdf', 'YOUR_DEVELOPER_TOKEN')
+# link = upload_pdf_to_box('/path/to/file.pdf', 'report.pdf')
 # print(link)
