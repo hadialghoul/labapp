@@ -288,6 +288,8 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not obj.uploaded_by:
             obj.uploaded_by = request.user
+        print(f"🔄 Saving photo for step: {obj.step.name} (ID: {obj.step.id})")
+        print(f"📧 Patient: {obj.step.treatment.patient.user.email}")
         super().save_model(request, obj, form, change)
         # Debug print after first save
         print(f"[DEBUG][TreatmentStepPhotoAdmin.save_model] After first save: id={obj.id}, image={obj.image}, image_url={obj.image_url}")
