@@ -289,11 +289,15 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
         if not obj.uploaded_by:
             obj.uploaded_by = request.user
         super().save_model(request, obj, form, change)
-        # Force update of image_url after image upload
-        if obj.image and hasattr(obj.image, 'url') and 'imgbb.com' in obj.image.url:
-            if obj.image_url != obj.image.url:
-                obj.image_url = obj.image.url
-                obj.save(update_fields=['image_url'])
+        # Debug print after first save
+        print(f"[DEBUG][TreatmentStepPhotoAdmin.save_model] After first save: id={obj.id}, image={obj.image}, image_url={obj.image_url}")
+        if obj.image and hasattr(obj.image, 'url'):
+            print(f"[DEBUG][TreatmentStepPhotoAdmin.save_model] image.url={obj.image.url}")
+            if 'imgbb.com' in obj.image.url:
+                if obj.image_url != obj.image.url:
+                    obj.image_url = obj.image.url
+                    obj.save(update_fields=['image_url'])
+                    print(f"[DEBUG][TreatmentStepPhotoAdmin.save_model] Updated image_url to {obj.image_url}")
     def get_image_url(self, obj):
         return obj.image_url or "No ImgBB URL"
     get_image_url.short_description = 'Photo ImgBB URL'
