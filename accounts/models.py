@@ -99,32 +99,18 @@ class TreatmentStep(models.Model):
 
         def save(self, *args, **kwargs):
             super().save(*args, **kwargs)
-            # Always ensure image_url is set to ImgBB URL
+            # After saving, fetch ImgBB URL from cache and persist it
             if self.image:
                 try:
-                    from django.conf import settings
-                    import os, requests
-                    needs_upload = not self.image_url or 'imgbb.com' not in (self.image_url or '')
-                    file_path = self.image.path if hasattr(self.image, 'path') else None
-                    if needs_upload and file_path and os.path.exists(file_path):
-                        api_key = getattr(settings, 'IMGBB_API_KEY', None)
-                        if api_key:
-                            with open(file_path, 'rb') as f:
-                                response = requests.post(
-                                    'https://api.imgbb.com/1/upload',
-                                    params={'key': api_key},
-                                    files={'image': (os.path.basename(file_path), f)}
-                                )
-                            if response.status_code == 200:
-                                url = response.json().get('data', {}).get('url')
-                                if url and url != self.image_url:
-                                    self.image_url = url
-                                    super().save(update_fields=['image_url'])
-                                    print(f"[MODEL][TreatmentStep] Uploaded and set image_url to {url}")
-                            else:
-                                print(f"[MODEL][TreatmentStep][ERROR] ImgBB upload failed: {response.text}")
-                        else:
-                            print('[MODEL][TreatmentStep][ERROR] IMGBB_API_KEY not set in settings.')
+                    from django.core.cache import cache
+                    cache_key = f"imgbb_url_{self.image.name}"
+                    url = cache.get(cache_key)
+                    if url and url != self.image_url:
+                        self.image_url = url
+                        super().save(update_fields=['image_url'])
+                        print(f"[MODEL][TreatmentStep] Set image_url from cache: {url}")
+                    elif not url:
+                        print(f"[MODEL][TreatmentStep][WARN] ImgBB URL not found in cache for: {self.image.name}")
                 except Exception as e:
                     print(f"[MODEL][TreatmentStep][ERROR] {e}")
             print(f"[DEBUG][TreatmentStep.save] id={self.id}, image={self.image}, image_url={self.image_url}")
@@ -241,32 +227,18 @@ class Treatment(models.Model):
 
         def save(self, *args, **kwargs):
             super().save(*args, **kwargs)
-            # Always ensure qr_image_url is set to ImgBB URL
+            # After saving, fetch ImgBB URL from cache and persist it
             if self.qr_image:
                 try:
-                    from django.conf import settings
-                    import os, requests
-                    needs_upload = not self.qr_image_url or 'imgbb.com' not in (self.qr_image_url or '')
-                    file_path = self.qr_image.path if hasattr(self.qr_image, 'path') else None
-                    if needs_upload and file_path and os.path.exists(file_path):
-                        api_key = getattr(settings, 'IMGBB_API_KEY', None)
-                        if api_key:
-                            with open(file_path, 'rb') as f:
-                                response = requests.post(
-                                    'https://api.imgbb.com/1/upload',
-                                    params={'key': api_key},
-                                    files={'image': (os.path.basename(file_path), f)}
-                                )
-                            if response.status_code == 200:
-                                url = response.json().get('data', {}).get('url')
-                                if url and url != self.qr_image_url:
-                                    self.qr_image_url = url
-                                    super().save(update_fields=['qr_image_url'])
-                                    print(f"[MODEL][Treatment] Uploaded and set qr_image_url to {url}")
-                            else:
-                                print(f"[MODEL][Treatment][ERROR] ImgBB upload failed: {response.text}")
-                        else:
-                            print('[MODEL][Treatment][ERROR] IMGBB_API_KEY not set in settings.')
+                    from django.core.cache import cache
+                    cache_key = f"imgbb_url_{self.qr_image.name}"
+                    url = cache.get(cache_key)
+                    if url and url != self.qr_image_url:
+                        self.qr_image_url = url
+                        super().save(update_fields=['qr_image_url'])
+                        print(f"[MODEL][Treatment] Set qr_image_url from cache: {url}")
+                    elif not url:
+                        print(f"[MODEL][Treatment][WARN] ImgBB URL not found in cache for: {self.qr_image.name}")
                 except Exception as e:
                     print(f"[MODEL][Treatment][ERROR] {e}")
             print(f"[DEBUG][Treatment.save] id={self.id}, qr_image={self.qr_image}, qr_image_url={self.qr_image_url}")
@@ -340,32 +312,18 @@ class TreatmentStepPhoto(models.Model):
         def save(self, *args, **kwargs):
             print(f"🔄 Saving photo for step: {self.step.name} (ID: {self.step.id})")
             super().save(*args, **kwargs)
-            # Always ensure image_url is set to ImgBB URL
+            # After saving, fetch ImgBB URL from cache and persist it
             if self.image:
                 try:
-                    from django.conf import settings
-                    import os, requests
-                    needs_upload = not self.image_url or 'imgbb.com' not in (self.image_url or '')
-                    file_path = self.image.path if hasattr(self.image, 'path') else None
-                    if needs_upload and file_path and os.path.exists(file_path):
-                        api_key = getattr(settings, 'IMGBB_API_KEY', None)
-                        if api_key:
-                            with open(file_path, 'rb') as f:
-                                response = requests.post(
-                                    'https://api.imgbb.com/1/upload',
-                                    params={'key': api_key},
-                                    files={'image': (os.path.basename(file_path), f)}
-                                )
-                            if response.status_code == 200:
-                                url = response.json().get('data', {}).get('url')
-                                if url and url != self.image_url:
-                                    self.image_url = url
-                                    super().save(update_fields=['image_url'])
-                                    print(f"[MODEL][TreatmentStepPhoto] Uploaded and set image_url to {url}")
-                            else:
-                                print(f"[MODEL][TreatmentStepPhoto][ERROR] ImgBB upload failed: {response.text}")
-                        else:
-                            print('[MODEL][TreatmentStepPhoto][ERROR] IMGBB_API_KEY not set in settings.')
+                    from django.core.cache import cache
+                    cache_key = f"imgbb_url_{self.image.name}"
+                    url = cache.get(cache_key)
+                    if url and url != self.image_url:
+                        self.image_url = url
+                        super().save(update_fields=['image_url'])
+                        print(f"[MODEL][TreatmentStepPhoto] Set image_url from cache: {url}")
+                    elif not url:
+                        print(f"[MODEL][TreatmentStepPhoto][WARN] ImgBB URL not found in cache for: {self.image.name}")
                 except Exception as e:
                     print(f"[MODEL][TreatmentStepPhoto][ERROR] {e}")
             print(f"[DEBUG][TreatmentStepPhoto.save] id={self.id}, image={self.image}, image_url={self.image_url}")
