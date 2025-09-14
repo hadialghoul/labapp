@@ -240,17 +240,6 @@ except Exception as e:
 # Ensure media directory exists for local fallback
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 
-# --- Cloudinary for PDFs (PatientReport only) ---
-if 'cloudinary' not in INSTALLED_APPS:
-    INSTALLED_APPS += ['cloudinary', 'cloudinary_storage']
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
-}
-
-# Do NOT set DEFAULT_FILE_STORAGE globally, only use for PatientReport
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
