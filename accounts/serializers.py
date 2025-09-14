@@ -48,15 +48,15 @@ class TreatmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Treatment
-        fields = ['id', 'patient', 'current_stage','qr_image_url']
+        fields = ['id', 'patient', 'current_stage', 'qr_image_url']
 
     def get_qr_image_url(self, obj):
+        # Always use the permanent ImgBB URL if available
+        if obj.qr_image_url:
+            return obj.qr_image_url
         request = self.context.get('request')
         if obj.qr_image and hasattr(obj.qr_image, 'url'):
-            if request:
-                return request.build_absolute_uri(obj.qr_image.url)
-            else:
-                return obj.qr_image.url
+            return request.build_absolute_uri(obj.qr_image.url) if request else obj.qr_image.url
         return None
 
 
@@ -71,6 +71,9 @@ class TreatmentStepPhotoSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_by', 'uploaded_at']
 
     def get_image_url(self, obj):
+        # Always use the permanent ImgBB URL if available
+        if obj.image_url:
+            return obj.image_url
         request = self.context.get('request')
         if obj.image and hasattr(obj.image, 'url'):
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url
@@ -85,6 +88,9 @@ class TreatmentStepSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'image', 'image_url', 'photos', 'duration_days', 'start_date']
 
     def get_image_url(self, obj):
+        # Always use the permanent ImgBB URL if available
+        if obj.image_url:
+            return obj.image_url
         request = self.context.get('request')
         if obj.image and hasattr(obj.image, 'url'):
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url

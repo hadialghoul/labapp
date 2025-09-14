@@ -112,13 +112,19 @@ class DoctorAdmin(admin.ModelAdmin):
     list_display = ('user', 'specialization')
 
 class TreatmentAdmin(admin.ModelAdmin):
-    list_display = ('patient', 'current_stage', 'get_qr_image')
+    list_display = ('patient', 'current_stage', 'get_qr_image', 'get_qr_image_url')
 
     def get_qr_image(self, obj):
-        if obj.qr_image:
-            return mark_safe(f'<img src="{obj.qr_image.url}" width="50" />')  # Render image in admin
+        if obj.qr_image_url:
+            return mark_safe(f'<img src="{obj.qr_image_url}" width="50" />')
+        elif obj.qr_image:
+            return mark_safe(f'<img src="{obj.qr_image.url}" width="50" />')
         return "No Image"
     get_qr_image.short_description = 'QR Code Image'
+
+    def get_qr_image_url(self, obj):
+        return obj.qr_image_url or "No ImgBB URL"
+    get_qr_image_url.short_description = 'QR ImgBB URL'
 
 class TreatmentStepPhotoInline(admin.TabularInline):
     model = TreatmentStepPhoto
@@ -142,7 +148,10 @@ class PatientTreatmentAdmin(admin.ModelAdmin):
 
 @admin.register(TreatmentStep)
 class TreatmentStepAdmin(admin.ModelAdmin):
-    list_display = ('name', 'get_patient_info', 'duration_days', 'start_date', 'is_active', 'is_completed', 'order')
+    list_display = ('name', 'get_patient_info', 'duration_days', 'start_date', 'is_active', 'is_completed', 'order', 'get_image_url')
+    def get_image_url(self, obj):
+        return obj.image_url or "No ImgBB URL"
+    get_image_url.short_description = 'Step ImgBB URL'
     list_filter = ('is_active', 'is_completed', 'notification_sent', 'treatment__patient__doctor')
     search_fields = ('name', 'treatment__patient__user__username', 'treatment__patient__user__email')
     inlines = [TreatmentStepPhotoInline]
@@ -252,7 +261,10 @@ class TreatmentStepAdmin(admin.ModelAdmin):
 
 @admin.register(TreatmentStepPhoto)
 class TreatmentStepPhotoAdmin(admin.ModelAdmin):
-    list_display = ('step', 'get_step_patient', 'uploaded_by', 'uploaded_at', 'get_photo_status')
+    list_display = ('step', 'get_step_patient', 'uploaded_by', 'uploaded_at', 'get_photo_status', 'get_image_url')
+    def get_image_url(self, obj):
+        return obj.image_url or "No ImgBB URL"
+    get_image_url.short_description = 'Photo ImgBB URL'
     list_filter = ('step__treatment__patient__user__email', 'uploaded_at', 'uploaded_by')
     readonly_fields = ('uploaded_at',)
     

@@ -61,6 +61,7 @@ class PatientTreatment(models.Model):
     def __str__(self):
         return f"Treatment for {self.patient}"
 
+
 class TreatmentStep(models.Model):
     treatment = models.ForeignKey(PatientTreatment, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
@@ -70,6 +71,7 @@ class TreatmentStep(models.Model):
         blank=True, 
         null=True
     )
+    image_url = models.URLField(blank=True, null=True, help_text="Permanent ImgBB URL for the step image")
     duration_days = models.PositiveIntegerField()
     start_date = models.DateField(default=timezone.now)
     is_active = models.BooleanField(default=False)  # Only one step should be active at a time
@@ -80,8 +82,19 @@ class TreatmentStep(models.Model):
     class Meta:
         ordering = ['order']
 
+
     def __str__(self):
         return f"{self.name} ({self.treatment.patient})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # After saving, if using ImgBB and image exists, update image_url
+        if self.image and hasattr(self.image, 'url'):
+            # If the url is an ImgBB url, save it
+            if 'imgbb.com' in self.image.url:
+                if self.image_url != self.image.url:
+                    self.image_url = self.image.url
+                    super().save(update_fields=['image_url'])
 
     def is_finished(self):
         """Check if the step duration has passed"""
@@ -170,6 +183,7 @@ Your Medical Treatment Team
                 return False
         return False
 
+
 class Treatment(models.Model):
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name='main_treatment')  # changed related_name
     current_stage = models.PositiveIntegerField(default=1)
@@ -178,9 +192,18 @@ class Treatment(models.Model):
         blank=True, 
         null=True
     )  # QR code image
+    qr_image_url = models.URLField(blank=True, null=True, help_text="Permanent ImgBB URL for the QR image")
 
     def __str__(self):
         return f"Treatment for {self.patient} - Stage {self.current_stage}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.qr_image and hasattr(self.qr_image, 'url'):
+            if 'imgbb.com' in self.qr_image.url:
+                if self.qr_image_url != self.qr_image.url:
+                    self.qr_image_url = self.qr_image.url
+                    super().save(update_fields=['qr_image_url'])
 
 class PatientReport(models.Model):
     """Store generated PDF reports for patients"""
@@ -225,10 +248,12 @@ class PatientReport(models.Model):
         return "No file"
 
 
+
 class TreatmentStepPhoto(models.Model):
     """Multiple photos can be attached to a TreatmentStep by the patient."""
     step = models.ForeignKey(TreatmentStep, on_delete=models.CASCADE, related_name='photos')
     image = models.ImageField(upload_to='treatment_step_photos/', storage=default_storage)
+    image_url = models.URLField(blank=True, null=True, help_text="Permanent ImgBB URL for the photo")
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -236,17 +261,11 @@ class TreatmentStepPhoto(models.Model):
         return f"Photo for {self.step.name} ({self.step.treatment.patient.user.email})"
 
     def save(self, *args, **kwargs):
-        """Custom save method with detailed logging for debugging"""
         print(f"🔄 Saving photo for step: {self.step.name} (ID: {self.step.id})")
-        if self.step.treatment and self.step.treatment.patient:
-            print(f"📧 Patient: {self.step.treatment.patient.user.email}")
-        else:
-            print("⚠️ No patient associated with this step")
-        
-        # Debug storage information
-        storage = self.image.storage
-        print(f"📦 Storage backend: {storage.__class__.__name__}")
-        print(f"🗂️ Storage module: {storage.__class__.__module__}")
-        
         super().save(*args, **kwargs)
-        print(f"✅ Photo saved with URL: {self.image.url}")
+        # After saving, if using ImgBB and image exists, update image_url
+        if self.image and hasattr(self.image, 'url'):
+            if 'imgbb.com' in self.image.url:
+                if self.image_url != self.image.url:
+                    self.image_url = self.image.url
+                    super().save(update_fields=['image_url'])
