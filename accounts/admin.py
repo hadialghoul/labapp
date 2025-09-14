@@ -130,13 +130,6 @@ class TreatmentAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         # Debug print after first save
         print(f"[DEBUG][TreatmentAdmin.save_model] After first save: id={obj.id}, qr_image={obj.qr_image}, qr_image_url={obj.qr_image_url}")
-        if obj.qr_image and hasattr(obj.qr_image, 'url'):
-            print(f"[DEBUG][TreatmentAdmin.save_model] qr_image.url={obj.qr_image.url}")
-            if 'imgbb.com' in obj.qr_image.url:
-                if obj.qr_image_url != obj.qr_image.url:
-                    obj.qr_image_url = obj.qr_image.url
-                    obj.save(update_fields=['qr_image_url'])
-                    print(f"[DEBUG][TreatmentAdmin.save_model] Updated qr_image_url to {obj.qr_image_url}")
 
 class TreatmentStepPhotoInline(admin.TabularInline):
     model = TreatmentStepPhoto
@@ -176,13 +169,6 @@ class TreatmentStepAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         # Debug print after first save
         print(f"[DEBUG][TreatmentStepAdmin.save_model] After first save: id={obj.id}, image={obj.image}, image_url={obj.image_url}")
-        if obj.image and hasattr(obj.image, 'url'):
-            print(f"[DEBUG][TreatmentStepAdmin.save_model] image.url={obj.image.url}")
-            if 'imgbb.com' in obj.image.url:
-                if obj.image_url != obj.image.url:
-                    obj.image_url = obj.image.url
-                    obj.save(update_fields=['image_url'])
-                    print(f"[DEBUG][TreatmentStepAdmin.save_model] Updated image_url to {obj.image_url}")
         # Add success message with patient info
         from django.contrib import messages
         patient_email = obj.treatment.patient.user.email
@@ -308,13 +294,6 @@ class TreatmentStepPhotoAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         # Debug print after first save
         print(f"[DEBUG][TreatmentStepPhotoAdmin.save_model] After first save: id={obj.id}, image={obj.image}, image_url={obj.image_url}")
-        if obj.image and hasattr(obj.image, 'url'):
-            print(f"[DEBUG][TreatmentStepPhotoAdmin.save_model] image.url={obj.image.url}")
-            if 'imgbb.com' in obj.image.url:
-                if obj.image_url != obj.image.url:
-                    obj.image_url = obj.image.url
-                    obj.save(update_fields=['image_url'])
-                    print(f"[DEBUG][TreatmentStepPhotoAdmin.save_model] Updated image_url to {obj.image_url}")
     def get_image_url(self, obj):
         return obj.image_url or "No ImgBB URL"
     get_image_url.short_description = 'Photo ImgBB URL'

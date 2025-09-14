@@ -97,6 +97,38 @@ class TreatmentStep(models.Model):
                     super().save(update_fields=['image_url'])
         print(f"[DEBUG][TreatmentStep.save] id={self.id}, image={self.image}, image_url={self.image_url}")
 
+        def save(self, *args, **kwargs):
+            super().save(*args, **kwargs)
+            # Always ensure image_url is set to ImgBB URL
+            if self.image:
+                try:
+                    from django.conf import settings
+                    import os, requests
+                    needs_upload = not self.image_url or 'imgbb.com' not in (self.image_url or '')
+                    file_path = self.image.path if hasattr(self.image, 'path') else None
+                    if needs_upload and file_path and os.path.exists(file_path):
+                        api_key = getattr(settings, 'IMGBB_API_KEY', None)
+                        if api_key:
+                            with open(file_path, 'rb') as f:
+                                response = requests.post(
+                                    'https://api.imgbb.com/1/upload',
+                                    params={'key': api_key},
+                                    files={'image': (os.path.basename(file_path), f)}
+                                )
+                            if response.status_code == 200:
+                                url = response.json().get('data', {}).get('url')
+                                if url and url != self.image_url:
+                                    self.image_url = url
+                                    super().save(update_fields=['image_url'])
+                                    print(f"[MODEL][TreatmentStep] Uploaded and set image_url to {url}")
+                            else:
+                                print(f"[MODEL][TreatmentStep][ERROR] ImgBB upload failed: {response.text}")
+                        else:
+                            print('[MODEL][TreatmentStep][ERROR] IMGBB_API_KEY not set in settings.')
+                except Exception as e:
+                    print(f"[MODEL][TreatmentStep][ERROR] {e}")
+            print(f"[DEBUG][TreatmentStep.save] id={self.id}, image={self.image}, image_url={self.image_url}")
+
     def is_finished(self):
         """Check if the step duration has passed"""
         return timezone.now().date() >= self.start_date + timezone.timedelta(days=self.duration_days)
@@ -207,6 +239,38 @@ class Treatment(models.Model):
                     super().save(update_fields=['qr_image_url'])
         print(f"[DEBUG][Treatment.save] id={self.id}, qr_image={self.qr_image}, qr_image_url={self.qr_image_url}")
 
+        def save(self, *args, **kwargs):
+            super().save(*args, **kwargs)
+            # Always ensure qr_image_url is set to ImgBB URL
+            if self.qr_image:
+                try:
+                    from django.conf import settings
+                    import os, requests
+                    needs_upload = not self.qr_image_url or 'imgbb.com' not in (self.qr_image_url or '')
+                    file_path = self.qr_image.path if hasattr(self.qr_image, 'path') else None
+                    if needs_upload and file_path and os.path.exists(file_path):
+                        api_key = getattr(settings, 'IMGBB_API_KEY', None)
+                        if api_key:
+                            with open(file_path, 'rb') as f:
+                                response = requests.post(
+                                    'https://api.imgbb.com/1/upload',
+                                    params={'key': api_key},
+                                    files={'image': (os.path.basename(file_path), f)}
+                                )
+                            if response.status_code == 200:
+                                url = response.json().get('data', {}).get('url')
+                                if url and url != self.qr_image_url:
+                                    self.qr_image_url = url
+                                    super().save(update_fields=['qr_image_url'])
+                                    print(f"[MODEL][Treatment] Uploaded and set qr_image_url to {url}")
+                            else:
+                                print(f"[MODEL][Treatment][ERROR] ImgBB upload failed: {response.text}")
+                        else:
+                            print('[MODEL][Treatment][ERROR] IMGBB_API_KEY not set in settings.')
+                except Exception as e:
+                    print(f"[MODEL][Treatment][ERROR] {e}")
+            print(f"[DEBUG][Treatment.save] id={self.id}, qr_image={self.qr_image}, qr_image_url={self.qr_image_url}")
+
 class PatientReport(models.Model):
     """Store generated PDF reports for patients"""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
@@ -272,3 +336,36 @@ class TreatmentStepPhoto(models.Model):
                     self.image_url = self.image.url
                     super().save(update_fields=['image_url'])
         print(f"[DEBUG][TreatmentStepPhoto.save] id={self.id}, image={self.image}, image_url={self.image_url}")
+
+        def save(self, *args, **kwargs):
+            print(f"🔄 Saving photo for step: {self.step.name} (ID: {self.step.id})")
+            super().save(*args, **kwargs)
+            # Always ensure image_url is set to ImgBB URL
+            if self.image:
+                try:
+                    from django.conf import settings
+                    import os, requests
+                    needs_upload = not self.image_url or 'imgbb.com' not in (self.image_url or '')
+                    file_path = self.image.path if hasattr(self.image, 'path') else None
+                    if needs_upload and file_path and os.path.exists(file_path):
+                        api_key = getattr(settings, 'IMGBB_API_KEY', None)
+                        if api_key:
+                            with open(file_path, 'rb') as f:
+                                response = requests.post(
+                                    'https://api.imgbb.com/1/upload',
+                                    params={'key': api_key},
+                                    files={'image': (os.path.basename(file_path), f)}
+                                )
+                            if response.status_code == 200:
+                                url = response.json().get('data', {}).get('url')
+                                if url and url != self.image_url:
+                                    self.image_url = url
+                                    super().save(update_fields=['image_url'])
+                                    print(f"[MODEL][TreatmentStepPhoto] Uploaded and set image_url to {url}")
+                            else:
+                                print(f"[MODEL][TreatmentStepPhoto][ERROR] ImgBB upload failed: {response.text}")
+                        else:
+                            print('[MODEL][TreatmentStepPhoto][ERROR] IMGBB_API_KEY not set in settings.')
+                except Exception as e:
+                    print(f"[MODEL][TreatmentStepPhoto][ERROR] {e}")
+            print(f"[DEBUG][TreatmentStepPhoto.save] id={self.id}, image={self.image}, image_url={self.image_url}")
