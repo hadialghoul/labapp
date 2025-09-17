@@ -366,12 +366,12 @@ import os
 from django.conf import settings
 from django.conf import settings
 
-class PatientReportAdminForm(forms.ModelForm):
-    pdf_upload = forms.FileField(label="Upload PDF", required=False, help_text="Select a PDF to upload. The file will be saved locally.")
 
+class PatientReportAdminForm(forms.ModelForm):
     class Meta:
         model = PatientReport
         fields = '__all__'
+
 
 @admin.register(PatientReport)
 class PatientReportAdmin(admin.ModelAdmin):
@@ -388,7 +388,7 @@ class PatientReportAdmin(admin.ModelAdmin):
             'fields': ('patient', 'title', 'generated_by', 'generated_at')
         }),
         ('File Details', {
-            'fields': ('report_file_url', 'pdf_upload')
+            'fields': ('report_file',)
         }),
         ('Report Period', {
             'fields': ('report_period_start', 'report_period_end'),
@@ -402,32 +402,12 @@ class PatientReportAdmin(admin.ModelAdmin):
 
     def get_download_link(self, obj):
         """Provide download link for the report"""
-        if obj.report_file_url:
-            return mark_safe(f'<a href="{obj.report_file_url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
+        if obj.report_file:
+            return mark_safe(f'<a href="{obj.report_file.url}" target="_blank" style="color: #417690;">📥 Download PDF</a>')
         return "No file"
     get_download_link.short_description = 'Download'
 
     def save_model(self, request, obj, form, change):
-    # Handle PDF upload to local storage
-        pdf_file = form.cleaned_data.get('pdf_upload')
-        if pdf_file:
-            # Save to a temp file
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
-                for chunk in pdf_file.chunks():
-                    tmp.write(chunk)
-                tmp_path = tmp.name
-            # Save to local media directory
-            try:
-                media_dir = os.path.join(settings.MEDIA_ROOT, 'pdf_reports')
-                os.makedirs(media_dir, exist_ok=True)
-                safe_name = pdf_file.name.replace(' ', '_')
-                dest_path = os.path.join(media_dir, safe_name)
-                with open(dest_path, 'wb') as dest:
-                    with open(tmp_path, 'rb') as src:
-                        dest.write(src.read())
-                obj.report_file_url = settings.MEDIA_URL + 'pdf_reports/' + safe_name
-            finally:
-                os.remove(tmp_path)
         if not change:
             obj.generated_by = request.user
         super().save_model(request, obj, form, change)
