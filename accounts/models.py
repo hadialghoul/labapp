@@ -248,6 +248,11 @@ class Treatment(models.Model):
 # Use Cloudinary storage for PDFs only
 
 class PatientReport(models.Model):
+    @property
+    def file_size(self):
+        if self.report_file and hasattr(self.report_file, 'size'):
+            return self.report_file.size
+        return 0
     """Store generated PDF reports for patients (local file link)"""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
