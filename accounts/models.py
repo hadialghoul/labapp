@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth import get_user_model
 import random
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.core.files.storage import default_storage
@@ -250,7 +251,13 @@ class PatientReport(models.Model):
     """Store generated PDF reports for patients (local file link)"""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='reports')
     generated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    report_file = models.FileField(upload_to='pdf_reports/', blank=True, null=True, help_text="Doctor report PDF file (stored in /var/media/pdf_reports)")
+    report_file = models.FileField(
+        upload_to='pdf_reports/',
+        blank=True,
+        null=True,
+        help_text="Doctor report PDF file (stored in /var/media/pdf_reports)",
+        storage=FileSystemStorage(location='/var/media', base_url='/media/')
+    )
     generated_at = models.DateTimeField(auto_now_add=True)
     report_period_start = models.DateField(null=True, blank=True)
     report_period_end = models.DateField(null=True, blank=True)
