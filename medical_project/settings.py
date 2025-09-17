@@ -241,7 +241,6 @@ except Exception as e:
     print(f"[DEBUG] STORAGES['default']: {STORAGES['default']['BACKEND']}")
 
 # Ensure media directory exists for local fallback
-os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 
 # Default primary key field type
