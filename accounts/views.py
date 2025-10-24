@@ -122,25 +122,48 @@ class RegisterView(APIView):
         confirm_password = request.data.get('confirm_password')  # Confirm password
         username = request.data.get('username')
 
+        # Validate required fields
+        if not email or not password or not username:
+            return Response({"detail": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+
         # Validate password confirmation
         if password != confirm_password:
             return Response({"detail": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Check if user already exists
+        if User.objects.filter(email=email).exists():
+            return Response({"detail": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(username=username).exists():
+            return Response({"detail": "Username already taken."}, status=status.HTTP_400_BAD_REQUEST)
+
         # Create user instance
-        user = User.objects.create_user(email=email, username=username, password=password)
+        try:
+            user = User.objects.create_user(email=email, username=username, password=password)
+        except Exception as e:
+            return Response({"detail": f"Error creating user: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Generate email verification code and save it
         verification = EmailVerification.objects.create(user=user)
         verification.generate_code()
 
-        # Send the verification code to the user's email
-        send_mail(
-            'Your Verification Code',
-            f'Your verification code is: {verification.code}',
-            'from@example.com',  # Set a valid email here
-            [email],
-            fail_silently=False,
-        )
+        # Send the verification code to the user's email - MUST succeed
+        try:
+            send_mail(
+                'Your Verification Code',
+                f'Your verification code is: {verification.code}',
+                'caldentalab@gmail.com',
+                [email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            # Email failed - delete the user and verification, fail registration
+            print(f"Email sending failed: {str(e)}")
+            verification.delete()
+            user.delete()
+            return Response({
+                "detail": "Email service is currently unavailable. Please try again later or contact support."
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"detail": "User created. Check your email for a verification code."}, status=status.HTTP_201_CREATED)
 
